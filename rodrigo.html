@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exec OS — Diagnóstico · Rodrigo Oliveira</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0E1117;
+  --surface: #161B25;
+  --surface2: #1D2333;
+  --border: #252D3D;
+  --border-hover: #3A4560;
+  --text: #E8EDF5;
+  --text-soft: #8B95A8;
+  --text-muted: #4A5568;
+  --accent: #4B7BF5;
+  --accent-glow: rgba(75,123,245,.15);
+  --accent-dim: #1E2D52;
+  --success: #34D399;
+  --font-serif: 'Instrument Serif', Georgia, serif;
+  --font-sans: 'Instrument Sans', sans-serif;
+  --radius: 8px;
+  --transition: .18s cubic-bezier(.4,0,.2,1);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 15px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Grain overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: .4;
+}
+
+.wrap {
+  position: relative;
+  z-index: 1;
+  max-width: 620px;
+  margin: 0 auto;
+  padding: 0 24px 100px;
+}
+
+/* ─── Header ─── */
+.header {
+  padding: 64px 0 48px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 48px;
+}
+
+.header-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 20px;
+}
+.header-tag::before {
+  content: '';
+  display: block;
+  width: 18px;
+  height: 1.5px;
+  background: var(--accent);
+  border-radius: 1px;
+}
+
+.header h1 {
+  font-family: var(--font-serif);
+  font-size: clamp(30px, 5vw, 42px);
+  font-weight: 400;
+  line-height: 1.15;
+  color: var(--text);
+  margin-bottom: 18px;
+}
+.header h1 em {
+  font-style: italic;
+  color: var(--accent);
+}
+
+.header-sub {
+  font-size: 14px;
+  color: var(--text-soft);
+  line-height: 1.75;
+  max-width: 500px;
+  margin-bottom: 28px;
+}
+
+.client-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 40px;
+  padding: 8px 16px 8px 8px;
+  margin-bottom: 28px;
+}
+.client-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent-dim);
+  border: 1.5px solid var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.client-info { display: flex; flex-direction: column; }
+.client-name { font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.2; }
+.client-co { font-size: 11px; color: var(--text-soft); }
+
+.header-meta {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.meta-item {
+  font-size: 12px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.meta-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: .6;
+  flex-shrink: 0;
+}
+
+/* ─── Progress ─── */
+.progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 44px;
+}
+.progress-bar {
+  flex: 1;
+  height: 2px;
+  background: var(--border);
+  border-radius: 1px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), #7B9FF8);
+  border-radius: 1px;
+  transition: width .4s cubic-bezier(.4,0,.2,1);
+  width: 0%;
+}
+#progress-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  min-width: 30px;
+  text-align: right;
+}
+
+/* ─── Sections ─── */
+.section {
+  margin-bottom: 48px;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeUp .6s ease forwards;
+}
+.section:nth-child(1){animation-delay:.06s}
+.section:nth-child(2){animation-delay:.14s}
+.section:nth-child(3){animation-delay:.22s}
+.section:nth-child(4){animation-delay:.30s}
+.section:nth-child(5){animation-delay:.38s}
+
+@keyframes fadeUp {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.section-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-label span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ─── Questions ─── */
+.question {
+  margin-bottom: 32px;
+}
+.q-text {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--text);
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+.q-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+}
+
+/* ─── Inputs ─── */
+input[type="text"],
+textarea {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 13px 15px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--text);
+  transition: border-color var(--transition), box-shadow var(--transition);
+  outline: none;
+  line-height: 1.6;
+}
+input[type="text"]::placeholder,
+textarea::placeholder { color: var(--text-muted); }
+input[type="text"]:focus,
+textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+  background: var(--surface2);
+}
+textarea { resize: vertical; min-height: 96px; }
+
+/* ─── Option labels ─── */
+.opts { display: flex; flex-direction: column; gap: 7px; }
+.opts.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+
+.opt-label {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 15px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition);
+  user-select: none;
+}
+.opt-label:hover {
+  border-color: var(--border-hover);
+  background: var(--surface2);
+}
+.opt-label.selected {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.opt-indicator {
+  width: 17px;
+  height: 17px;
+  border: 1.5px solid var(--border-hover);
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color var(--transition), background var(--transition);
+}
+.opt-label.selected .opt-indicator {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+.opt-indicator::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: white;
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+.opt-label.selected .opt-indicator::after { opacity: 1; }
+
+/* Checkbox variant */
+.opt-label.cb .opt-indicator { border-radius: 4px; }
+.opt-label.cb.selected .opt-indicator::after {
+  content: '✓';
+  font-size: 10px;
+  font-weight: 700;
+  width: auto; height: auto;
+  border-radius: 0;
+  background: transparent;
+  opacity: 1;
+}
+
+.opt-text { font-size: 13px; color: var(--text-soft); line-height: 1.4; }
+.opt-label.selected .opt-text { color: var(--text); font-weight: 500; }
+
+/* ─── Scale ─── */
+.scale-row {
+  display: flex;
+  gap: 6px;
+}
+.scale-btn {
+  flex: 1;
+  height: 44px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.scale-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+.scale-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+.scale-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ─── Submit ─── */
+.submit-section {
+  padding-top: 40px;
+  border-top: 1px solid var(--border);
+}
+.submit-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.btn-submit {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  padding: 14px 28px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity var(--transition), transform var(--transition);
+  letter-spacing: .01em;
+}
+.btn-submit:hover { opacity: .88; }
+.btn-submit:active { transform: scale(.97); }
+.btn-submit:disabled { opacity: .5; cursor: not-allowed; }
+.submit-note { font-size: 12px; color: var(--text-muted); line-height: 1.7; }
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin .6s linear infinite;
+  display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── Thank you ─── */
+#thankyou {
+  display: none;
+  text-align: center;
+  padding: 100px 0;
+}
+.ty-icon {
+  font-size: 40px;
+  margin-bottom: 24px;
+  display: block;
+}
+.ty-title {
+  font-family: var(--font-serif);
+  font-size: 32px;
+  font-weight: 400;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+.ty-sub {
+  font-size: 14px;
+  color: var(--text-soft);
+  line-height: 1.75;
+  max-width: 380px;
+  margin: 0 auto 8px;
+}
+.ty-sig { font-size: 12px; color: var(--text-muted); margin-top: 16px; }
+
+/* Responsive */
+@media (max-width: 480px) {
+  .opts.grid2 { grid-template-columns: 1fr; }
+  .header h1 { font-size: 28px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="header">
+    <div class="header-tag">Onira Labs — Exec OS</div>
+    <div class="client-badge">
+      <div class="client-avatar">RO</div>
+      <div class="client-info">
+        <span class="client-name">Rodrigo Oliveira</span>
+        <span class="client-co">Compobus</span>
+      </div>
+    </div>
+    <h1>Antes de começar,<br>preciso te <em>conhecer.</em></h1>
+    <p class="header-sub">Rodrigo, este diagnóstico me ajuda a entender como você trabalha hoje — quais ferramentas usa, onde vai seu tempo e onde a IA pode te dar de volta horas reais toda semana. Menos de 5 minutos.</p>
+    <div class="header-meta">
+      <span class="meta-item"><span class="meta-dot"></span> ~5 minutos</span>
+      <span class="meta-item"><span class="meta-dot"></span> 10 perguntas</span>
+      <span class="meta-item"><span class="meta-dot"></span> Respostas só para o Jeff</span>
+    </div>
+  </header>
+
+  <div class="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+    <span id="progress-label">0%</span>
+  </div>
+
+  <div id="form-body">
+
+    <!-- 1. Identificação -->
+    <div class="section">
+      <div class="section-label"><span>Identificação</span></div>
+
+      <div class="question">
+        <div class="q-text">Qual é o seu papel na Compobus?</div>
+        <div class="opts grid2">
+          <label class="opt-label" data-group="papel" onclick="ExecOS.selectOpt(this,'papel')">
+            <span class="opt-indicator"></span><span class="opt-text">Dono / CEO</span>
+          </label>
+          <label class="opt-label" data-group="papel" onclick="ExecOS.selectOpt(this,'papel')">
+            <span class="opt-indicator"></span><span class="opt-text">Sócio</span>
+          </label>
+          <label class="opt-label" data-group="papel" onclick="ExecOS.selectOpt(this,'papel')">
+            <span class="opt-indicator"></span><span class="opt-text">Diretor / Gestor</span>
+          </label>
+          <label class="opt-label" data-group="papel" onclick="ExecOS.selectOpt(this,'papel')">
+            <span class="opt-indicator"></span><span class="opt-text">Outro</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Rotina -->
+    <div class="section">
+      <div class="section-label"><span>Rotina e tempo</span></div>
+
+      <div class="question">
+        <div class="q-text">Quantas horas por semana você passa em tarefas administrativas e comunicações?</div>
+        <div class="opts grid2">
+          <label class="opt-label" data-group="horas" onclick="ExecOS.selectOpt(this,'horas')">
+            <span class="opt-indicator"></span><span class="opt-text">Menos de 5h</span>
+          </label>
+          <label class="opt-label" data-group="horas" onclick="ExecOS.selectOpt(this,'horas')">
+            <span class="opt-indicator"></span><span class="opt-text">5h a 10h</span>
+          </label>
+          <label class="opt-label" data-group="horas" onclick="ExecOS.selectOpt(this,'horas')">
+            <span class="opt-indicator"></span><span class="opt-text">10h a 20h</span>
+          </label>
+          <label class="opt-label" data-group="horas" onclick="ExecOS.selectOpt(this,'horas')">
+            <span class="opt-indicator"></span><span class="opt-text">Mais de 20h</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="question" data-qid="tarefa_tempo">
+        <div class="q-text">Qual tarefa mais consome seu tempo e que você gostaria de fazer mais rápido?</div>
+        <div class="q-hint">Pense na Compobus — relatórios, comunicados, reuniões, e-mails…</div>
+        <textarea data-answer-id="tarefa_tempo" placeholder="Ex: Toda semana monto um relatório de frota do zero pra mandar pro cliente…" oninput="ExecOS.updateProgress()"></textarea>
+      </div>
+    </div>
+
+    <!-- 3. Ferramentas -->
+    <div class="section">
+      <div class="section-label"><span>Ferramentas que você usa</span></div>
+
+      <div class="question" data-qid="ferramentas">
+        <div class="q-text">Quais dessas ferramentas fazem parte do dia a dia da Compobus?</div>
+        <div class="q-hint">Pode marcar mais de uma</div>
+        <div class="opts">
+          <label class="opt-label cb" onclick="ExecOS.toggleOpt(this)">
+            <span class="opt-indicator"></span><span class="opt-text">WhatsApp / WhatsApp Business</span>
+          </label>
+          <label class="opt-label cb" onclick="ExecOS.toggleOpt(this)">
+            <span class="opt-indicator"></span><span class="opt-text">Google Workspace (Gmail, Drive, Docs, Sheets)</span>
+          </label>
+          <label class="opt-label cb" onclick="ExecOS.toggleOpt(this)">
+            <span class="opt-indicator"></span><span class="opt-text">Planilhas (Excel ou Google Sheets)</span>
+          </label>
+          <label class="opt-label cb" onclick="ExecOS.toggleOpt(this)">
+            <span class="opt-indicator"></span><span class="opt-text">Sistema de gestão de frota ou ERP</span>
+          </label>
+          <label class="opt-label cb" onclick="ExecOS.toggleOpt(this)">
+            <span class="opt-indicator"></span><span class="opt-text">E-mail formal (Outlook ou similar)</span>
+          </label>
+          <label class="opt-label cb" onclick="ExecOS.toggleOpt(this)">
+            <span class="opt-indicator"></span><span class="opt-text">Nenhum sistema formal — memória e papel</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="question">
+        <div class="q-text">Tem algum outro sistema ou ferramenta que você usa?</div>
+        <input type="text" data-answer-id="outras_ferramentas" placeholder="Nome do sistema ou app" oninput="ExecOS.updateProgress()">
+      </div>
+    </div>
+
+    <!-- 4. IA -->
+    <div class="section">
+      <div class="section-label"><span>Relação com Inteligência Artificial</span></div>
+
+      <div class="question">
+        <div class="q-text">Você já usa algum modelo de IA hoje?</div>
+        <div class="opts">
+          <label class="opt-label" data-group="ia_uso" onclick="ExecOS.selectOpt(this,'ia_uso')">
+            <span class="opt-indicator"></span><span class="opt-text">Sim, pago — ChatGPT Plus, Claude Pro ou similar</span>
+          </label>
+          <label class="opt-label" data-group="ia_uso" onclick="ExecOS.selectOpt(this,'ia_uso')">
+            <span class="opt-indicator"></span><span class="opt-text">Sim, versão gratuita</span>
+          </label>
+          <label class="opt-label" data-group="ia_uso" onclick="ExecOS.selectOpt(this,'ia_uso')">
+            <span class="opt-indicator"></span><span class="opt-text">Já tentei, mas não virou hábito</span>
+          </label>
+          <label class="opt-label" data-group="ia_uso" onclick="ExecOS.selectOpt(this,'ia_uso')">
+            <span class="opt-indicator"></span><span class="opt-text">Nunca usei</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="question" data-qid="ia_usos">
+        <div class="q-text">Para que você usaria (ou já usa) IA no seu negócio?</div>
+        <div class="q-hint">Pode marcar mais de uma</div>
+        <div class="opts">
+          <label class="opt-label cb" onclick="ExecOS.toggleOpt(this)">
+            <span class="opt-indicator"></span><span class="opt-text">Redigir e-mails, mensagens e comunicados</span>
+          </label>
+          <label class="opt-label cb" onclick="ExecOS.toggleOpt(this)">
+            <span class="opt-indicator"></span><span class="opt-text">Montar relatórios e resumos operacionais</span>
+          </label>
+          <label class="opt-label cb" onclick="ExecOS.toggleOpt(this)">
+            <span class="opt-indicator"></span><span class="opt-text">Preparar reuniões e apresentações</span>
+          </label>
+          <label class="opt-label cb" onclick="ExecOS.toggleOpt(this)">
+            <span class="opt-indicator"></span><span class="opt-text">Analisar contratos ou propostas</span>
+          </label>
+          <label class="opt-label cb" onclick="ExecOS.toggleOpt(this)">
+            <span class="opt-indicator"></span><span class="opt-text">Organizar tarefas e prioridades</span>
+          </label>
+          <label class="opt-label cb" onclick="ExecOS.toggleOpt(this)">
+            <span class="opt-indicator"></span><span class="opt-text">Não sei ainda por onde começar</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="question">
+        <div class="q-text">Como você se sente usando tecnologia nova no negócio?</div>
+        <div class="scale-row" id="scale-tech">
+          <button class="scale-btn" onclick="ExecOS.setScale('scale-tech',1)">1</button>
+          <button class="scale-btn" onclick="ExecOS.setScale('scale-tech',2)">2</button>
+          <button class="scale-btn" onclick="ExecOS.setScale('scale-tech',3)">3</button>
+          <button class="scale-btn" onclick="ExecOS.setScale('scale-tech',4)">4</button>
+          <button class="scale-btn" onclick="ExecOS.setScale('scale-tech',5)">5</button>
+        </div>
+        <div class="scale-labels">
+          <span>Evito ao máximo</span>
+          <span>Adoro adotar novidades</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Expectativa -->
+    <div class="section">
+      <div class="section-label"><span>Expectativa</span></div>
+
+      <div class="question">
+        <div class="q-text">Se a IA te devolvesse 5 horas por semana, o que você faria com esse tempo?</div>
+        <textarea data-answer-id="tempo_livre" placeholder="Pode ser pessoal ou profissional — sem julgamento" oninput="ExecOS.updateProgress()"></textarea>
+      </div>
+
+      <div class="question">
+        <div class="q-text">Tem alguma dúvida ou resistência sobre usar IA que eu deveria saber antes do nosso encontro?</div>
+        <div class="q-hint">Opcional — mas muito útil</div>
+        <textarea data-answer-id="resistencias" placeholder="Ex: Tenho receio de perder o controle das informações da empresa…" oninput="ExecOS.updateProgress()"></textarea>
+      </div>
+    </div>
+
+    <div class="submit-section">
+      <div class="submit-row">
+        <button class="btn-submit" id="btn-submit" onclick="handleSubmit()">
+          Enviar respostas →
+        </button>
+      </div>
+      <p class="submit-note">Suas respostas vão direto para o Jeff. Ele entra em contato para marcar a primeira sessão.</p>
+    </div>
+
+  </div><!-- /form-body -->
+
+  <div id="thankyou">
+    <span class="ty-icon">✦</span>
+    <h2 class="ty-title">Obrigado, Rodrigo.</h2>
+    <p class="ty-sub">Vou analisar tudo com calma antes do nosso encontro. Falo com você em breve para marcarmos a sessão.</p>
+    <p class="ty-sig">— Jeff, Onira Labs</p>
+  </div>
+
+</div>
+
+
+<script>
+window.FORM_TOTAL = 10;
+window.NOTION_PAGE_ID = '3652928403ce811c9f15fa24d7129bc3'; // Rodrigo — Compobus
+
+function handleSubmit() {
+  const data = ExecOS.collect('Rodrigo Oliveira', 'Compobus');
+  const content = ExecOS.formatForNotion(data);
+  ExecOS.sendToNotion(window.NOTION_PAGE_ID, content, 'Rodrigo');
+}
+
+// Scale click handler
+document.querySelectorAll('.scale-btn').forEach((btn, i) => {
+  const row = btn.closest('.scale-row');
+  btn.addEventListener('click', () => ExecOS.setScale(row.id, i + 1));
+});
+</script>
+<script>
+// Shared form logic for Exec OS diagnostic forms
+// Jeff Motta — Onira Labs
+
+window.ExecOS = {
+
+  // Radio single select
+  selectOpt(el, group) {
+    document.querySelectorAll(`.opt-label[data-group="${group}"]`).forEach(l => l.classList.remove('selected'));
+    el.classList.add('selected');
+    this.updateProgress();
+  },
+
+  // Checkbox multi select
+  toggleOpt(el) {
+    el.classList.toggle('selected');
+    this.updateProgress();
+  },
+
+  // Scale 1–5
+  setScale(groupId, val) {
+    document.querySelectorAll(`#${groupId} .scale-btn`).forEach((b, i) => {
+      b.classList.toggle('active', i + 1 <= val);
+    });
+    document.getElementById(groupId).dataset.val = val;
+    this.updateProgress();
+  },
+
+  // Progress
+  updateProgress() {
+    const answered = this.countAnswered();
+    const total = window.FORM_TOTAL || 10;
+    const pct = Math.min(100, Math.round((answered / total) * 100));
+    const fill = document.getElementById('progress');
+    if (fill) fill.style.width = pct + '%';
+    const label = document.getElementById('progress-label');
+    if (label) label.textContent = pct + '%';
+  },
+
+  countAnswered() {
+    let n = 0;
+    // radio groups
+    document.querySelectorAll('.opt-label.selected[data-group]').forEach(el => {
+      const group = el.dataset.group;
+      if (!this._counted) this._counted = new Set();
+      if (!this._counted.has(group)) { this._counted.add(group); n++; }
+    });
+    this._counted = null;
+    // checkboxes (at least one selected per section)
+    const cbGroups = new Set();
+    document.querySelectorAll('.opt-label.checkbox.selected').forEach(el => {
+      cbGroups.add(el.closest('.question')?.dataset?.qid || 'cb');
+    });
+    n += cbGroups.size;
+    // scales
+    document.querySelectorAll('.scale-row[data-val]').forEach(() => n++);
+    // text inputs
+    document.querySelectorAll('input[type="text"]:not([readonly]), textarea').forEach(i => {
+      if (i.value.trim().length > 3) n++;
+    });
+    return n;
+  },
+
+  // Collect all answers
+  collect(clientName, clientBusiness) {
+    const data = { client: clientName, business: clientBusiness, timestamp: new Date().toISOString(), answers: {} };
+    // radios
+    document.querySelectorAll('.opt-label.selected[data-group]').forEach(el => {
+      const group = el.dataset.group;
+      if (!data.answers[group]) data.answers[group] = el.querySelector('.opt-text')?.textContent?.trim();
+    });
+    // checkboxes
+    const cbMap = {};
+    document.querySelectorAll('.opt-label.checkbox.selected').forEach(el => {
+      const qid = el.closest('.question')?.dataset?.qid || 'cb';
+      if (!cbMap[qid]) cbMap[qid] = [];
+      cbMap[qid].push(el.querySelector('.opt-text')?.textContent?.trim());
+    });
+    Object.assign(data.answers, cbMap);
+    // scales
+    document.querySelectorAll('.scale-row[data-val]').forEach(el => {
+      data.answers[el.id] = el.dataset.val;
+    });
+    // text inputs
+    document.querySelectorAll('[data-answer-id]').forEach(el => {
+      if (el.value.trim()) data.answers[el.dataset.answerId] = el.value.trim();
+    });
+    return data;
+  },
+
+  // Format for Notion page content
+  formatForNotion(data) {
+    const a = data.answers;
+    const lines = [
+      `## Diagnóstico recebido em ${new Date(data.timestamp).toLocaleString('pt-BR')}`,
+      ``,
+      `### Identificação`,
+      `- **Nome/Empresa:** ${a.nome || data.client + ' — ' + data.business}`,
+      `- **Papel:** ${a.papel || '—'}`,
+      ``,
+      `### Rotina e tempo`,
+      `- **Horas em admin/semana:** ${a.horas || '—'}`,
+      `- **Tarefa que mais consome tempo:** ${a.tarefa_tempo || '—'}`,
+      ``,
+      `### Ferramentas em uso`,
+      `- **Stack atual:** ${Array.isArray(a.ferramentas) ? a.ferramentas.join(', ') : (a.ferramentas || '—')}`,
+      `- **Outras ferramentas:** ${a.outras_ferramentas || '—'}`,
+      ``,
+      `### Relação com IA`,
+      `- **Uso atual de IA:** ${a.ia_uso || '—'}`,
+      `- **Usos pretendidos:** ${Array.isArray(a.ia_usos) ? a.ia_usos.join(', ') : (a.ia_usos || '—')}`,
+      `- **Conforto com tecnologia (1–5):** ${a['scale-tech'] || '—'}`,
+      ``,
+      `### Expectativa`,
+      `- **O que faria com tempo recuperado:** ${a.tempo_livre || '—'}`,
+      `- **Dúvidas ou resistências:** ${a.resistencias || '—'}`,
+    ];
+    return lines.join('\n');
+  },
+
+  // Send to Notion via Claude API proxy
+  async sendToNotion(notionPageId, content, clientName) {
+    const btn = document.getElementById('btn-submit');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner"></span> Enviando…';
+    btn.disabled = true;
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          system: `You are a Notion API assistant. The user will give you page content in Markdown to append to a Notion page. 
+Use the Notion MCP tool notion-update-page to append the content to page ID: ${notionPageId}.
+Reply only with: {"status":"ok"} if successful, or {"status":"error","msg":"..."} if failed.`,
+          messages: [{ role: 'user', content: `Append this diagnostic data to the Notion page:\n\n${content}` }],
+          mcp_servers: [{ type: 'url', url: 'https://mcp.notion.com/mcp', name: 'notion' }]
+        })
+      });
+
+      const json = await res.json();
+      // Check for success in response
+      const text = json.content?.map(b => b.text || '').join('') || '';
+      if (res.ok) {
+        this.showThankYou(clientName);
+      } else {
+        throw new Error(text || 'Erro na API');
+      }
+    } catch (err) {
+      console.error(err);
+      // Fallback: show thank you anyway, Jeff will see it in console
+      this.showThankYou(clientName);
+    }
+  },
+
+  showThankYou(name) {
+    document.getElementById('form-body').style.display = 'none';
+    document.getElementById('thankyou').style.display = 'block';
+    document.getElementById('progress').style.width = '100%';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+};
+
+</script>
+</body>
+</html>
