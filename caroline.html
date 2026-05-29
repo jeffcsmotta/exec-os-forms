@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diagnóstico — Caroline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --soil:     #2C1A0E;
+    --earth:    #5C3D1E;
+    --clay:     #A0633A;
+    --straw:    #E8D5B0;
+    --cream:    #FAF5EC;
+    --berry:    #8B1A2E;
+    --red:      #C0392B;
+    --leaf:     #3D5A2C;
+    --mist:     #F2EDE3;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background-color: var(--cream);
+    color: var(--soil);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── TEXTURE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(ellipse 80% 60% at 10% 90%, rgba(140,90,40,.08) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 80% at 90% 10%, rgba(139,26,46,.06) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative;
+    padding: 72px 24px 56px;
+    text-align: center;
+    overflow: hidden;
+  }
+
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 60px; height: 2px;
+    background: var(--berry);
+  }
+
+  .hero-eyebrow {
+    display: inline-block;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--clay);
+    margin-bottom: 20px;
+    padding: 6px 14px;
+    border: 1px solid var(--clay);
+    border-radius: 2px;
+  }
+
+  .hero-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 6vw, 3.4rem);
+    font-weight: 600;
+    line-height: 1.15;
+    color: var(--soil);
+    margin-bottom: 10px;
+  }
+
+  .hero-title em {
+    font-style: italic;
+    color: var(--berry);
+  }
+
+  .hero-sub {
+    font-size: 15px;
+    font-weight: 300;
+    color: var(--earth);
+    max-width: 480px;
+    margin: 16px auto 0;
+    line-height: 1.7;
+  }
+
+  .hero-deco {
+    font-size: 48px;
+    margin-bottom: 12px;
+    display: block;
+    filter: saturate(0.8);
+  }
+
+  /* ── FORM WRAPPER ── */
+  .form-wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  /* ── SECTION HEADING ── */
+  .section-label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: .24em;
+    text-transform: uppercase;
+    color: var(--clay);
+    margin-bottom: 28px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(160,99,58,.2);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-label::before {
+    content: attr(data-num);
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--berry);
+    opacity: .7;
+  }
+
+  /* ── QUESTION BLOCK ── */
+  .q-block {
+    margin-bottom: 36px;
+    animation: fadeUp .5s ease both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity:0; transform: translateY(12px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+
+  .q-block:nth-child(2)  { animation-delay: .05s }
+  .q-block:nth-child(3)  { animation-delay: .10s }
+  .q-block:nth-child(4)  { animation-delay: .15s }
+  .q-block:nth-child(5)  { animation-delay: .20s }
+  .q-block:nth-child(6)  { animation-delay: .25s }
+
+  .q-label {
+    font-family: 'Playfair Display', serif;
+    font-size: 16px;
+    font-weight: 400;
+    color: var(--soil);
+    margin-bottom: 6px;
+    line-height: 1.5;
+  }
+
+  .q-hint {
+    font-size: 12px;
+    font-weight: 300;
+    color: var(--clay);
+    margin-bottom: 10px;
+    font-style: italic;
+  }
+
+  /* ── INPUTS ── */
+  input[type="text"],
+  input[type="email"],
+  textarea,
+  select {
+    width: 100%;
+    background: rgba(255,255,255,.7);
+    border: 1px solid rgba(160,99,58,.25);
+    border-radius: 4px;
+    padding: 13px 16px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--soil);
+    transition: border-color .2s, box-shadow .2s;
+    outline: none;
+    -webkit-appearance: none;
+  }
+
+  input[type="text"]:focus,
+  input[type="email"]:focus,
+  textarea:focus,
+  select:focus {
+    border-color: var(--berry);
+    box-shadow: 0 0 0 3px rgba(139,26,46,.08);
+    background: #fff;
+  }
+
+  textarea { resize: vertical; min-height: 100px; line-height: 1.6; }
+
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235C3D1E' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    cursor: pointer;
+  }
+
+  /* ── RADIO / CHECK GRID ── */
+  .opt-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 8px;
+  }
+
+  .opt-grid.col-1 { grid-template-columns: 1fr; }
+  .opt-grid.col-2 { grid-template-columns: 1fr 1fr; }
+
+  .opt-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1px solid rgba(160,99,58,.2);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: border-color .2s, background .2s;
+    font-size: 13.5px;
+    line-height: 1.45;
+    background: rgba(255,255,255,.5);
+  }
+
+  .opt-label:hover { border-color: var(--berry); background: rgba(255,255,255,.9); }
+
+  .opt-label input {
+    width: 15px; height: 15px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    accent-color: var(--berry);
+    cursor: pointer;
+  }
+
+  /* ── RANGE ── */
+  .range-wrap { display: flex; align-items: center; gap: 14px; }
+
+  input[type="range"] {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 3px;
+    background: linear-gradient(to right, var(--berry) 0%, var(--berry) var(--pct, 50%), rgba(160,99,58,.2) var(--pct, 50%));
+    border-radius: 2px;
+    outline: none;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px; height: 18px;
+    background: var(--berry);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(139,26,46,.3);
+  }
+
+  .range-val {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    color: var(--berry);
+    min-width: 28px;
+    text-align: right;
+  }
+
+  .range-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--clay);
+    margin-top: 4px;
+    font-style: italic;
+  }
+
+  /* ── DIVIDER ── */
+  .divider {
+    margin: 48px 0 36px;
+    position: relative;
+    height: 1px;
+    background: rgba(160,99,58,.15);
+  }
+
+  .divider::after {
+    content: '✦';
+    position: absolute;
+    left: 50%; top: 50%;
+    transform: translate(-50%,-50%);
+    background: var(--cream);
+    padding: 0 12px;
+    color: var(--clay);
+    font-size: 12px;
+  }
+
+  /* ── SUBMIT ── */
+  .submit-area { text-align: center; margin-top: 52px; }
+
+  .submit-note {
+    font-size: 12px;
+    color: var(--clay);
+    font-weight: 300;
+    margin-bottom: 20px;
+    font-style: italic;
+  }
+
+  .btn-submit {
+    display: inline-block;
+    background: var(--berry);
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    padding: 16px 52px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background .2s, transform .15s, box-shadow .2s;
+    box-shadow: 0 4px 18px rgba(139,26,46,.22);
+  }
+
+  .btn-submit:hover {
+    background: var(--earth);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 24px rgba(139,26,46,.3);
+  }
+
+  .btn-submit:active { transform: translateY(0); }
+
+  /* ── THANK YOU ── */
+  #thankyou {
+    display: none;
+    text-align: center;
+    padding: 80px 24px 100px;
+    animation: fadeUp .6s ease both;
+  }
+
+  .ty-icon { font-size: 48px; display: block; margin-bottom: 20px; }
+
+  .ty-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--soil);
+    margin-bottom: 14px;
+  }
+
+  .ty-sub {
+    font-size: 15px;
+    font-weight: 300;
+    color: var(--earth);
+    max-width: 400px;
+    margin: 0 auto 20px;
+    line-height: 1.7;
+  }
+
+  .ty-sig {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    color: var(--clay);
+    font-size: 15px;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 480px) {
+    .opt-grid.col-2 { grid-template-columns: 1fr; }
+    .hero { padding: 56px 20px 44px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <span class="hero-deco">🍓</span>
+  <span class="hero-eyebrow">Exec OS · Diagnóstico</span>
+  <h1 class="hero-title">Olá, <em>Caroline.</em></h1>
+  <p class="hero-sub">
+    Antes da nossa conversa, quero entender de verdade como você trabalha — do plantio à comercialização. Não tem resposta certa. Quanto mais honesta, melhor posso te ajudar.
+  </p>
+</div>
+
+<!-- FORM -->
+<div class="form-wrap" id="form-body">
+  <form id="diagForm" action="https://formspree.io/f/jeffersoncsmotta@gmail.com" method="POST">
+
+    <!-- 1. VOCÊ E O NEGÓCIO -->
+    <p class="section-label" data-num="01">Você e o negócio</p>
+
+    <div class="q-block">
+      <p class="q-label">Qual é o seu nome completo e como prefere ser chamada?</p>
+      <input type="text" name="nome" placeholder="Caroline…" required>
+    </div>
+
+    <div class="q-block">
+      <p class="q-label">Há quanto tempo você produz morangos? A propriedade é familiar ou só sua?</p>
+      <p class="q-hint">Contexto ajuda a entender o ritmo e as relações de trabalho.</p>
+      <textarea name="tempo_producao" placeholder="Ex: 8 anos, herdei da família e hoje toco com meu marido e um funcionário fixo…"></textarea>
+    </div>
+
+    <div class="q-block">
+      <p class="q-label">Qual é a escala atual da sua produção?</p>
+      <p class="q-hint">Área plantada, volume médio por safra, quantidade de atravessadores ativos.</p>
+      <textarea name="escala" placeholder="Ex: 3 hectares, ~15 ton/safra, 2 atravessadores fixos e 1 eventual…"></textarea>
+    </div>
+
+    <div class="q-block">
+      <p class="q-label">Você cuida de qual parte do processo no dia a dia?</p>
+      <p class="q-hint">Marque tudo que se aplica — mesmo o que divide com alguém.</p>
+      <div class="opt-grid col-2">
+        <label class="opt-label"><input type="checkbox" name="atividades" value="Preparo do solo e plantio"> Preparo do solo e plantio</label>
+        <label class="opt-label"><input type="checkbox" name="atividades" value="Irrigação e adubação"> Irrigação e adubação</label>
+        <label class="opt-label"><input type="checkbox" name="atividades" value="Controle de pragas e doenças"> Controle de pragas e doenças</label>
+        <label class="opt-label"><input type="checkbox" name="atividades" value="Colheita e classificação"> Colheita e classificação</label>
+        <label class="opt-label"><input type="checkbox" name="atividades" value="Embalagem e logística"> Embalagem e logística</label>
+        <label class="opt-label"><input type="checkbox" name="atividades" value="Negociação com atravessadores"> Negociação com atravessadores</label>
+        <label class="opt-label"><input type="checkbox" name="atividades" value="Controle financeiro"> Controle financeiro</label>
+        <label class="opt-label"><input type="checkbox" name="atividades" value="Compra de insumos"> Compra de insumos</label>
+        <label class="opt-label"><input type="checkbox" name="atividades" value="Gestão de funcionários"> Gestão de funcionários</label>
+        <label class="opt-label"><input type="checkbox" name="atividades" value="Documentação / fiscal"> Documentação / fiscal</label>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- 2. COMERCIALIZAÇÃO -->
+    <p class="section-label" data-num="02">Comercialização e atravessadores</p>
+
+    <div class="q-block">
+      <p class="q-label">Como funciona a sua relação com os atravessadores hoje?</p>
+      <p class="q-hint">Contrato, combinado verbal, frequência de entrega, quem define o preço…</p>
+      <textarea name="relacao_atravessadores" placeholder="Ex: Dois compradores fixos que vêm buscar semanalmente. Preço sempre é definido por eles na hora da entrega…"></textarea>
+    </div>
+
+    <div class="q-block">
+      <p class="q-label">Você sabe quanto cada atravessador revende seu produto? Tem acesso a essa informação?</p>
+      <div class="opt-grid col-1">
+        <label class="opt-label"><input type="radio" name="visibilidade_revenda" value="Sim, tenho ideia do preço de revenda"> Sim, tenho ideia do preço de revenda</label>
+        <label class="opt-label"><input type="radio" name="visibilidade_revenda" value="Ouço às vezes, mas não de forma sistemática"> Ouço às vezes, mas não de forma sistemática</label>
+        <label class="opt-label"><input type="radio" name="visibilidade_revenda" value="Não sei e nunca tive esse acesso"> Não sei e nunca tive esse acesso</label>
+        <label class="opt-label"><input type="radio" name="visibilidade_revenda" value="Prefiro não saber, não quero conflito"> Prefiro não saber, não quero conflito</label>
+      </div>
+    </div>
+
+    <div class="q-block">
+      <p class="q-label">Já tentou vender diretamente para grandes grupos (redes, distribuidores, mercados)?</p>
+      <p class="q-hint">O que funcionou, o que travou, o que te fez desistir (se for o caso).</p>
+      <textarea name="venda_direta" placeholder="Ex: Tentei uma vez com um supermercado regional, pediram nota e volume constante — não consegui cumprir…"></textarea>
+    </div>
+
+    <div class="q-block">
+      <p class="q-label">Como você controla o que entra e sai financeiramente da propriedade?</p>
+      <div class="opt-grid col-1">
+        <label class="opt-label"><input type="radio" name="controle_financeiro" value="Planilha própria (Excel ou similar)"> Planilha própria (Excel ou similar)</label>
+        <label class="opt-label"><input type="radio" name="controle_financeiro" value="Caderno / anotações no papel"> Caderno / anotações no papel</label>
+        <label class="opt-label"><input type="radio" name="controle_financeiro" value="Aplicativo ou software de gestão"> Aplicativo ou software de gestão</label>
+        <label class="opt-label"><input type="radio" name="controle_financeiro" value="Contador ou terceiro cuida"> Contador ou terceiro cuida</label>
+        <label class="opt-label"><input type="radio" name="controle_financeiro" value="Não tenho controle estruturado"> Não tenho controle estruturado</label>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- 3. DOR E TEMPO -->
+    <p class="section-label" data-num="03">O que pesa no dia a dia</p>
+
+    <div class="q-block">
+      <p class="q-label">Onde você sente que mais perde tempo — ou energia — hoje?</p>
+      <p class="q-hint">Pode ser algo administrativo, relacional ou operacional.</p>
+      <textarea name="perde_tempo" placeholder="Ex: Fico horas calculando custo de insumos vs. preço recebido para saber se valeu a pena. Ou: negociar com o atravessador me estresa mais do que o trabalho físico…"></textarea>
+    </div>
+
+    <div class="q-block">
+      <p class="q-label">Tem alguma tarefa que você adia porque é chata ou porque não sabe bem como fazer?</p>
+      <textarea name="adia" placeholder="Ex: Responder e-mail de fornecedor, fazer orçamento de insumos, preencher planilha de produção…"></textarea>
+    </div>
+
+    <div class="q-block">
+      <p class="q-label">Numa semana normal, quanto tempo você passa em tarefas de "escritório" (cálculos, mensagens, documentos)?</p>
+      <div class="opt-grid col-2">
+        <label class="opt-label"><input type="radio" name="tempo_escritorio" value="Menos de 2h"> Menos de 2h</label>
+        <label class="opt-label"><input type="radio" name="tempo_escritorio" value="Entre 2h e 5h"> Entre 2h e 5h</label>
+        <label class="opt-label"><input type="radio" name="tempo_escritorio" value="Entre 5h e 10h"> Entre 5h e 10h</label>
+        <label class="opt-label"><input type="radio" name="tempo_escritorio" value="Mais de 10h"> Mais de 10h</label>
+      </div>
+    </div>
+
+    <div class="q-block">
+      <p class="q-label">Em qual momento da safra você mais se sente sobrecarregada?</p>
+      <textarea name="pico_sobrecarga" placeholder="Ex: Na colheita, quando preciso ao mesmo tempo colher, embalar, avisar os compradores e ainda resolver problema de funcionário…"></textarea>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- 4. TECNOLOGIA E ABERTURA -->
+    <p class="section-label" data-num="04">Tecnologia e próximos passos</p>
+
+    <div class="q-block">
+      <p class="q-label">Como você se sente em relação a usar tecnologia no trabalho?</p>
+      <div class="range-wrap">
+        <input type="range" name="conforto_tec" min="1" max="10" value="5" id="tec_range"
+          oninput="this.style.setProperty('--pct',(this.value-1)/9*100+'%'); document.getElementById('tec_val').textContent=this.value">
+        <span class="range-val" id="tec_val">5</span>
+      </div>
+      <div class="range-labels"><span>Prefiro evitar</span><span>Uso tudo que aparece</span></div>
+    </div>
+
+    <div class="q-block">
+      <p class="q-label">Você usa WhatsApp para fechar venda, combinar entrega ou receber pedidos?</p>
+      <div class="opt-grid col-2">
+        <label class="opt-label"><input type="radio" name="uso_whats" value="Sim, é meu principal canal"> Sim, é meu principal canal</label>
+        <label class="opt-label"><input type="radio" name="uso_whats" value="Uso, mas não é o único"> Uso, mas não é o único</label>
+        <label class="opt-label"><input type="radio" name="uso_whats" value="Uso pouco, prefiro ligação"> Uso pouco, prefiro ligação</label>
+        <label class="opt-label"><input type="radio" name="uso_whats" value="Não uso para negócios"> Não uso para negócios</label>
+      </div>
+    </div>
+
+    <div class="q-block">
+      <p class="q-label">Se você pudesse mudar uma coisa no seu negócio nos próximos 3 meses, o que seria?</p>
+      <p class="q-hint">Pode ser algo pequeno. Não precisa ser ambicioso — só real.</p>
+      <textarea name="mudanca_3meses" placeholder="Ex: Saber exatamente quanto lucrei em cada safra. Ter um jeito de negociar melhor o preço. Parar de resolver tudo na correria…"></textarea>
+    </div>
+
+    <div class="q-block">
+      <p class="q-label">Tem algo que você quis dizer e nenhuma pergunta deu espaço?</p>
+      <textarea name="livre" placeholder="Fique à vontade…"></textarea>
+    </div>
+
+    <!-- CONTATO -->
+    <div class="divider"></div>
+    <p class="section-label" data-num="05">Contato</p>
+
+    <div class="q-block">
+      <p class="q-label">Seu e-mail (para eu confirmar a sessão com você)</p>
+      <input type="email" name="email" placeholder="caroline@…">
+    </div>
+
+    <div class="q-block">
+      <p class="q-label">Seu WhatsApp</p>
+      <input type="text" name="whatsapp" placeholder="(xx) 9xxxx-xxxx">
+    </div>
+
+    <!-- HIDDEN -->
+    <input type="hidden" name="_subject" value="Diagnóstico Exec OS — Caroline (Produtora de Morangos)">
+    <input type="hidden" name="_next" value="">
+
+    <div class="submit-area">
+      <p class="submit-note">Levo em média 24h para analisar antes do nosso encontro.</p>
+      <button type="submit" class="btn-submit" onclick="handleSubmit()">Enviar respostas →</button>
+    </div>
+
+  </form>
+</div>
+
+<!-- THANK YOU -->
+<div id="thankyou">
+  <span class="ty-icon">🍓</span>
+  <h2 class="ty-title">Obrigada, Caroline.</h2>
+  <p class="ty-sub">Vou ler com calma tudo que você escreveu antes de conversarmos. Falo com você em breve para marcarmos a sessão.</p>
+  <p class="ty-sig">— Jeff, Onira Labs</p>
+</div>
+
+<script>
+  // range init
+  const r = document.getElementById('tec_range');
+  if(r) r.style.setProperty('--pct', (r.value-1)/9*100+'%');
+
+  // form submit
+  const form = document.getElementById('diagForm');
+  if(form){
+    form.addEventListener('submit', function(e){
+      // let formspree handle it, just show thank you after short delay
+      setTimeout(()=>{
+        document.getElementById('form-body').style.display='none';
+        document.querySelector('.hero').style.display='none';
+        document.getElementById('thankyou').style.display='block';
+        window.scrollTo({top:0, behavior:'smooth'});
+      }, 400);
+    });
+  }
+
+  function handleSubmit(){
+    // additional hook if needed
+  }
+</script>
+</body>
+</html>
