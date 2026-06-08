@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exec OS — Diagnóstico Josi Assis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --white:  #f2f3f4;
+    --ink:    #111213;
+    --brass:  #9a7c4a;
+    --muted:  #6b6d6f;
+    --border: #d0d1d2;
+    --hover:  rgba(154,124,74,0.05);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--white);
+    color: var(--ink);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    font-size: 15px;
+    line-height: 1.75;
+  }
+
+  /* PROGRESS */
+  #prog {
+    position: fixed; top: 0; left: 0;
+    height: 2px; width: 0%;
+    background: var(--brass);
+    transition: width .35s ease;
+    z-index: 99;
+  }
+
+  /* HEADER */
+  header {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 64px 32px 48px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .mono {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: var(--brass);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .mono::after {
+    content: '';
+    flex: 1; height: 1px;
+    background: var(--brass);
+    opacity: .25;
+  }
+
+  h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 300;
+    font-size: clamp(34px, 5vw, 50px);
+    line-height: 1.12;
+    letter-spacing: -.015em;
+    margin-bottom: 24px;
+  }
+  h1 em { font-style: italic; color: var(--brass); }
+
+  .lead {
+    font-size: 13.5px;
+    color: var(--muted);
+    line-height: 1.8;
+    padding-left: 16px;
+    border-left: 1.5px solid var(--brass);
+    max-width: 480px;
+    opacity: 0;
+    transform: translateY(6px);
+    animation: up .5s ease .2s forwards;
+  }
+
+  /* MAIN */
+  main { max-width: 640px; margin: 0 auto; padding: 0 32px 96px; }
+
+  /* SECTION */
+  .section {
+    padding-top: 64px;
+    opacity: 0; transform: translateY(14px);
+    transition: opacity .5s ease, transform .5s ease;
+  }
+  .section.in { opacity: 1; transform: none; }
+
+  .sec-head {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    margin-bottom: 36px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sec-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--brass);
+    letter-spacing: .15em;
+  }
+  h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 400;
+    font-size: 21px;
+    line-height: 1.3;
+  }
+
+  /* FIELD */
+  .field { margin-bottom: 32px; }
+
+  label.ql {
+    display: block;
+    font-size: 13.5px;
+    font-weight: 400;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+  label.ql .hint {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 300;
+    margin-top: 3px;
+  }
+
+  input[type=text],
+  input[type=email],
+  textarea {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    padding: 10px 0;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 300;
+    color: var(--ink);
+    outline: none;
+    transition: border-color .2s;
+    border-radius: 0;
+    -webkit-appearance: none;
+  }
+  input:focus, textarea:focus { border-bottom-color: var(--brass); }
+  textarea { resize: vertical; min-height: 80px; }
+
+  /* OPTIONS */
+  .opts { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+
+  .opt {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 13px 16px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: border-color .2s, background .2s;
+  }
+  .opt:hover { border-color: var(--brass); background: var(--hover); }
+  .opt:has(input:checked) { border-color: var(--brass); background: var(--hover); }
+
+  .opt input[type=radio],
+  .opt input[type=checkbox] {
+    appearance: none; -webkit-appearance: none;
+    width: 15px; height: 15px;
+    min-width: 15px;
+    border: 1px solid var(--muted);
+    border-radius: 50%;
+    margin-top: 3px;
+    cursor: pointer;
+    position: relative;
+    transition: all .2s;
+    flex-shrink: 0;
+  }
+  .opt input[type=checkbox] { border-radius: 0; }
+  .opt input:checked { background: var(--brass); border-color: var(--brass); }
+  .opt input[type=radio]:checked::after {
+    content: '';
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    width: 5px; height: 5px;
+    border-radius: 50%; background: #fff;
+  }
+  .opt input[type=checkbox]:checked::after {
+    content: '✓';
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    font-size: 9px; color: #fff; line-height: 1;
+  }
+
+  .opt-text { font-size: 13px; line-height: 1.55; }
+  .opt-text strong { display: block; font-weight: 500; font-size: 13px; margin-bottom: 1px; }
+
+  /* SCALE */
+  .scale-wrap { margin-top: 10px; }
+  .scale-ends {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .scale-end {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: .04em;
+  }
+  .scale-btns {
+    display: flex;
+    gap: 6px;
+  }
+  .scale-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+  }
+  .scale-btn input[type=radio] {
+    appearance: none; -webkit-appearance: none;
+    width: 100%; height: 36px;
+    border: 1px solid var(--border);
+    border-radius: 0;
+    cursor: pointer;
+    transition: all .2s;
+    position: relative;
+  }
+  .scale-btn input:hover { border-color: var(--brass); }
+  .scale-btn input:checked { background: var(--brass); border-color: var(--brass); }
+  .scale-btn span {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; color: var(--muted);
+  }
+
+  /* DIVIDER */
+  hr { border: none; border-top: 1px solid var(--border); }
+
+  /* SUBMIT */
+  .sub-sec {
+    padding-top: 56px;
+    opacity: 0; transform: translateY(14px);
+    transition: opacity .5s ease, transform .5s ease;
+  }
+  .sub-sec.in { opacity: 1; transform: none; }
+
+  .sub-note {
+    font-family: 'DM Mono', monospace;
+    font-size: 10.5px;
+    color: var(--muted);
+    letter-spacing: .05em;
+    margin-bottom: 20px;
+  }
+
+  button[type=submit] {
+    background: var(--ink);
+    color: var(--white);
+    border: none;
+    padding: 15px 40px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12.5px;
+    font-weight: 400;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    transition: background .2s;
+  }
+  button[type=submit]:hover { background: var(--brass); }
+
+  /* SUCCESS */
+  #success {
+    display: none;
+    max-width: 640px;
+    margin: 80px auto;
+    padding: 0 32px;
+  }
+  #success h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 300; font-size: 34px;
+    line-height: 1.2; margin-bottom: 16px;
+  }
+  #success p { color: var(--muted); font-size: 14px; line-height: 1.8; }
+
+  @keyframes up { to { opacity: 1; transform: none; } }
+
+  @media (max-width: 560px) {
+    header, main { padding-left: 20px; padding-right: 20px; }
+    header { padding-top: 48px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="prog"></div>
+
+<header>
+  <div class="mono">Exec OS — Diagnóstico de Onboarding</div>
+  <h1>Antes de a gente<br><em>se encontrar.</em></h1>
+  <p class="lead">
+    Cinco minutos agora viram uma conversa muito melhor.<br>
+    Não tem resposta certa — só o que é verdade pra você hoje.
+  </p>
+</header>
+
+<main>
+<form id="form" action="https://formspree.io/f/xgoqkkkn" method="POST">
+  <input type="hidden" name="_subject" value="Exec OS — Diagnóstico Josi Assis">
+  <input type="hidden" name="prospect" value="Josi Assis">
+
+  <!-- 01 ONDE A INFORMAÇÃO VIVE -->
+  <div class="section" id="s1">
+    <div class="sec-head">
+      <span class="sec-num">01</span>
+      <h2>Onde a informação vive hoje</h2>
+    </div>
+
+    <div class="field">
+      <label class="ql">
+        Quando você sai de uma reunião importante, onde vai a decisão ou o compromisso que foi acordado?
+        <span class="hint">Não o que deveria acontecer — o que de fato acontece.</span>
+      </label>
+      <div class="opts">
+        <label class="opt">
+          <input type="radio" name="pos_reuniao" value="cabeca">
+          <span class="opt-text"><strong>Fica na cabeça</strong>Eu lembro. Geralmente.</span>
+        </label>
+        <label class="opt">
+          <input type="radio" name="pos_reuniao" value="whats_nota">
+          <span class="opt-text"><strong>WhatsApp ou nota rápida</strong>Mando mensagem pra mim mesma, ou jogo numa nota. Nem sempre acho depois.</span>
+        </label>
+        <label class="opt">
+          <input type="radio" name="pos_reuniao" value="fathom_gravacao">
+          <span class="opt-text"><strong>Fathom ou gravação da reunião</strong>Tem o registro — mas eu precisaria voltar pra extrair o que importa.</span>
+        </label>
+        <label class="opt">
+          <input type="radio" name="pos_reuniao" value="task_manager">
+          <span class="opt-text"><strong>Já vai direto pro task manager</strong>Tenho o processo. Funciona.</span>
+        </label>
+        <label class="opt">
+          <input type="radio" name="pos_reuniao" value="depende">
+          <span class="opt-text"><strong>Depende do dia e da reunião</strong>Não tenho consistência nisso.</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="ql">
+        Quais ferramentas estão na sua rotina hoje? (pode marcar mais de uma)
+      </label>
+      <div class="opts">
+        <label class="opt"><input type="checkbox" name="tools" value="fathom"><span class="opt-text">Fathom</span></label>
+        <label class="opt"><input type="checkbox" name="tools" value="notion"><span class="opt-text">Notion</span></label>
+        <label class="opt"><input type="checkbox" name="tools" value="google_cal"><span class="opt-text">Google Calendar</span></label>
+        <label class="opt"><input type="checkbox" name="tools" value="linear_jira"><span class="opt-text">Linear / Jira / outro task manager</span></label>
+        <label class="opt"><input type="checkbox" name="tools" value="slack"><span class="opt-text">Slack como registro informal</span></label>
+        <label class="opt"><input type="checkbox" name="tools" value="ia_pontual"><span class="opt-text">ChatGPT / Claude de forma pontual</span></label>
+        <label class="opt"><input type="checkbox" name="tools" value="nenhuma_sistematica"><span class="opt-text">Nenhuma com consistência — cada semana é uma</span></label>
+      </div>
+    </div>
+
+  </div>
+  <hr>
+
+  <!-- 02 OS TRÊS BURACOS DO DIA -->
+  <div class="section" id="s2">
+    <div class="sec-head">
+      <span class="sec-num">02</span>
+      <h2>Onde a informação escapa</h2>
+    </div>
+
+    <div class="field">
+      <label class="ql">
+        Pensa numa semana típica sua — três momentos em que algo importante se perde.<br>
+        Quais desses você reconhece?
+        <span class="hint">Marque os que são reais, não os que deveriam ser problema.</span>
+      </label>
+      <div class="opts">
+        <label class="opt">
+          <input type="checkbox" name="buracos" value="pos_reuniao_compromisso">
+          <span class="opt-text"><strong>Pós-reunião</strong>Saí com algo definido. Não registrei na hora. Quando fui checar, não lembrava do detalhe.</span>
+        </label>
+        <label class="opt">
+          <input type="checkbox" name="buracos" value="evento_insight">
+          <span class="opt-text"><strong>Eventos e palestras</strong>Insight captado no caderno ou no celular. Nunca virou nada — ficou no registro.</span>
+        </label>
+        <label class="opt">
+          <input type="checkbox" name="buracos" value="deslocamento">
+          <span class="opt-text"><strong>Em trânsito</strong>A ideia veio no uber, na van, no avião. Não deu pra registrar direito. Sumiu.</span>
+        </label>
+        <label class="opt">
+          <input type="checkbox" name="buracos" value="feedback_time">
+          <span class="opt-text"><strong>Feedback do time</strong>Tenho uma percepção sobre alguém. Não documentei. Na hora do 1:1, não lembro do contexto.</span>
+        </label>
+        <label class="opt">
+          <input type="checkbox" name="buracos" value="conteudo_ideia">
+          <span class="opt-text"><strong>Ideias de conteúdo</strong>Pensei em algo bom pra postar ou desenvolver. Não capturei. Quando fui sentar pra criar — não tinha nada.</span>
+        </label>
+        <label class="opt">
+          <input type="checkbox" name="buracos" value="deal_percepção">
+          <span class="opt-text"><strong>Percepção sobre deals ou clientes</strong>Saí de uma conversa com intuição sobre aquele lead. Não registrei. Quando voltei ao assunto, o contexto tinha ido.</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="ql">
+        Tem um buraco que não apareceu acima e que é recorrente pra você?
+      </label>
+      <textarea name="buraco_livre" placeholder="Opcional — mas é aqui que as respostas mais úteis aparecem."></textarea>
+    </div>
+
+  </div>
+  <hr>
+
+  <!-- 03 ENTRADA E SAÍDA -->
+  <div class="section" id="s3">
+    <div class="sec-head">
+      <span class="sec-num">03</span>
+      <h2>Como você prefere capturar e receber</h2>
+    </div>
+
+    <div class="field">
+      <label class="ql">
+        Quando você precisa capturar algo rápido, o que você realmente faz?
+        <span class="hint">Não o que você gostaria de fazer — o que você de fato faz quando tem 30 segundos.</span>
+      </label>
+      <div class="opts">
+        <label class="opt">
+          <input type="radio" name="entrada" value="voz">
+          <span class="opt-text"><strong>Áudio de voz</strong>Gravo um áudio pra mim mesma ou mando no WhatsApp.</span>
+        </label>
+        <label class="opt">
+          <input type="radio" name="entrada" value="texto_curto">
+          <span class="opt-text"><strong>Texto curto</strong>Jogo no note, no WhatsApp, no que tiver aberto.</span>
+        </label>
+        <label class="opt">
+          <input type="radio" name="entrada" value="foto_print">
+          <span class="opt-text"><strong>Foto ou print</strong>Registro visual. Depois vejo o que fazer.</span>
+        </label>
+        <label class="opt">
+          <input type="radio" name="entrada" value="nada">
+          <span class="opt-text"><strong>Nada — confio na memória</strong>E às vezes funciona.</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="ql">
+        Quando você senta pra trabalhar no começo do dia, o que seria mais valioso já estar pronto?
+        <span class="hint">Se o sistema tivesse trabalhado enquanto você dormia — o que você queria encontrar?</span>
+      </label>
+      <div class="opts">
+        <label class="opt">
+          <input type="checkbox" name="saida_ideal" value="tarefas_geradas">
+          <span class="opt-text"><strong>Tarefas geradas automaticamente</strong>Do que ficou aberto ontem — reuniões, conversas, compromissos.</span>
+        </label>
+        <label class="opt">
+          <input type="checkbox" name="saida_ideal" value="resumo_dia">
+          <span class="opt-text"><strong>Resumo do que vem no dia</strong>Agenda + contexto de cada compromisso + o que preciso saber antes de entrar.</span>
+        </label>
+        <label class="opt">
+          <input type="checkbox" name="saida_ideal" value="mensagem_redigida">
+          <span class="opt-text"><strong>Mensagem já redigida pra mandar pro time</strong>O follow-up da reunião de ontem. O ponto de atenção que preciso comunicar. Só aprovar e enviar.</span>
+        </label>
+        <label class="opt">
+          <input type="checkbox" name="saida_ideal" value="banco_conteudo">
+          <span class="opt-text"><strong>Banco de ideias de conteúdo alimentado</strong>A partir do que capturei no dia anterior — organizado por tema, pronto pra desenvolver.</span>
+        </label>
+        <label class="opt">
+          <input type="checkbox" name="saida_ideal" value="clipping_nicho">
+          <span class="opt-text"><strong>Clipping curado do meu nicho</strong>O que saiu de relevante sobre comportamento, liderança, tech — sem eu precisar garimpar.</span>
+        </label>
+      </div>
+    </div>
+
+  </div>
+  <hr>
+
+  <!-- 04 CONTEXTO E PRÓXIMO PASSO -->
+  <div class="section" id="s4">
+    <div class="sec-head">
+      <span class="sec-num">04</span>
+      <h2>Contexto e próximos passos</h2>
+    </div>
+
+    <div class="field">
+      <label class="ql">
+        Numa frase — qual é a coisa que consome mais energia mental na sua semana, fora as reuniões em si?
+      </label>
+      <textarea name="maior_carga" placeholder="A coisa que fica rodando em background mesmo quando você está em outra coisa."></textarea>
+    </div>
+
+    <div class="field">
+      <label class="ql">E-mail</label>
+      <input type="email" name="email" placeholder="josi@rocketseat.com.br" required>
+    </div>
+
+  </div>
+  <hr>
+
+  <div class="sub-sec" id="sub">
+    <p class="sub-note">Respostas chegam pro Jefferson antes do encontro.</p>
+    <button type="submit">Enviar &nbsp;→</button>
+  </div>
+
+</form>
+
+<div id="success">
+  <div class="mono" style="margin-bottom:28px">Recebido</div>
+  <h2>Obrigado, Josi.<br><em>Até logo mais.</em></h2>
+  <p>As respostas já estão com o Jefferson. A conversa começa de onde isso termina.</p>
+</div>
+</main>
+
+<script>
+  // Intersection reveal
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section, .sub-sec').forEach(el => obs.observe(el));
+
+  // Progress
+  function prog() {
+    const f = document.getElementById('form');
+    const rGroups = new Set([...f.querySelectorAll('input[type=radio]')].map(r => r.name));
+    const cGroups = new Set([...f.querySelectorAll('input[type=checkbox]')].map(c => c.name));
+    const texts   = [...f.querySelectorAll('input[type=email], textarea')];
+    const total   = rGroups.size + cGroups.size + texts.length;
+    if (!total) return;
+    const checkedR = new Set([...f.querySelectorAll('input[type=radio]:checked')].map(r => r.name)).size;
+    const checkedC = [...f.querySelectorAll('input[type=checkbox]:checked')].length > 0
+      ? new Set([...f.querySelectorAll('input[type=checkbox]:checked')].map(c => c.name)).size : 0;
+    const filledT  = texts.filter(t => t.value.trim()).length;
+    document.getElementById('prog').style.width =
+      Math.min(100, Math.round(((checkedR + checkedC + filledT) / total) * 100)) + '%';
+  }
+  document.getElementById('form').addEventListener('input', prog);
+  document.getElementById('form').addEventListener('change', prog);
+
+  // Submit
+  document.getElementById('form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const btn = this.querySelector('button[type=submit]');
+    btn.textContent = 'Enviando…'; btn.disabled = true;
+    try {
+      const r = await fetch(this.action, {
+        method: 'POST', body: new FormData(this),
+        headers: { Accept: 'application/json' }
+      });
+      if (r.ok) {
+        this.style.display = 'none';
+        document.getElementById('success').style.display = 'block';
+        document.getElementById('prog').style.width = '100%';
+      } else { btn.textContent = 'Erro — tente novamente'; btn.disabled = false; }
+    } catch { btn.textContent = 'Erro de conexão'; btn.disabled = false; }
+  });
+</script>
+</body>
+</html>
