@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exec OS — Diagnóstico · Rodrigo Oliveira</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0E1117;
+  --surface: #161B25;
+  --surface2: #1D2333;
+  --border: #252D3D;
+  --border-hover: #3A4560;
+  --text: #E8EDF5;
+  --text-soft: #8B95A8;
+  --text-muted: #4A5568;
+  --accent: #4B7BF5;
+  --accent-glow: rgba(75,123,245,.15);
+  --accent-dim: #1E2D52;
+  --success: #34D399;
+  --font-serif: 'Instrument Serif', Georgia, serif;
+  --font-sans: 'Instrument Sans', sans-serif;
+  --radius: 8px;
+  --transition: .18s cubic-bezier(.4,0,.2,1);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 15px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: .4;
+}
+
+.wrap {
+  position: relative;
+  z-index: 1;
+  max-width: 620px;
+  margin: 0 auto;
+  padding: 0 24px 100px;
+}
+
+/* ─── Header ─── */
+.header {
+  padding: 64px 0 48px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 48px;
+}
+
+.header-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 20px;
+}
+.header-tag::before {
+  content: '';
+  display: block;
+  width: 18px;
+  height: 1.5px;
+  background: var(--accent);
+  border-radius: 1px;
+}
+
+.header h1 {
+  font-family: var(--font-serif);
+  font-size: clamp(30px, 5vw, 42px);
+  font-weight: 400;
+  line-height: 1.15;
+  color: var(--text);
+  margin-bottom: 18px;
+}
+.header h1 em {
+  font-style: italic;
+  color: var(--accent);
+}
+
+.header-sub {
+  font-size: 14px;
+  color: var(--text-soft);
+  line-height: 1.75;
+  max-width: 520px;
+  margin-bottom: 28px;
+}
+
+.client-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 40px;
+  padding: 8px 16px 8px 8px;
+  margin-bottom: 28px;
+}
+.client-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent-dim);
+  border: 1.5px solid var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.client-info { display: flex; flex-direction: column; }
+.client-name { font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.2; }
+.client-co { font-size: 11px; color: var(--text-soft); }
+
+.header-meta {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.meta-item {
+  font-size: 12px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.meta-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: .6;
+  flex-shrink: 0;
+}
+
+/* ─── Progress ─── */
+.progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 44px;
+}
+.progress-bar {
+  flex: 1;
+  height: 2px;
+  background: var(--border);
+  border-radius: 1px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), #7B9FF8);
+  border-radius: 1px;
+  transition: width .4s cubic-bezier(.4,0,.2,1);
+  width: 0%;
+}
+#progress-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  min-width: 30px;
+  text-align: right;
+}
+
+/* ─── Sections ─── */
+.section {
+  margin-bottom: 48px;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeUp .6s ease forwards;
+}
+.section:nth-child(1){animation-delay:.06s}
+.section:nth-child(2){animation-delay:.14s}
+.section:nth-child(3){animation-delay:.22s}
+.section:nth-child(4){animation-delay:.30s}
+.section:nth-child(5){animation-delay:.38s}
+.section:nth-child(6){animation-delay:.46s}
+.section:nth-child(7){animation-delay:.54s}
+.section:nth-child(8){animation-delay:.62s}
+
+@keyframes fadeUp {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.section-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-label span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ─── Questions ─── */
+.question {
+  margin-bottom: 32px;
+}
+.q-text {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--text);
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+.q-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+  line-height: 1.6;
+}
+
+/* ─── Inputs ─── */
+input[type="text"],
+textarea {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 13px 15px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--text);
+  transition: border-color var(--transition), box-shadow var(--transition);
+  outline: none;
+  line-height: 1.6;
+}
+input[type="text"]::placeholder,
+textarea::placeholder { color: var(--text-muted); }
+input[type="text"]:focus,
+textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+  background: var(--surface2);
+}
+textarea { resize: vertical; min-height: 96px; }
+
+/* ─── Option labels ─── */
+.opts { display: flex; flex-direction: column; gap: 7px; }
+.opts.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+
+.opt-label {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 15px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition);
+  user-select: none;
+}
+.opt-label:hover {
+  border-color: var(--border-hover);
+  background: var(--surface2);
+}
+.opt-label.selected {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.opt-indicator {
+  width: 17px;
+  height: 17px;
+  border: 1.5px solid var(--border-hover);
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color var(--transition), background var(--transition);
+}
+.opt-label.selected .opt-indicator {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+.opt-indicator::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: white;
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+.opt-label.selected .opt-indicator::after { opacity: 1; }
+
+.opt-label.cb .opt-indicator { border-radius: 4px; }
+.opt-label.cb.selected .opt-indicator::after {
+  content: '✓';
+  font-size: 10px;
+  font-weight: 700;
+  width: auto; height: auto;
+  border-radius: 0;
+  background: transparent;
+  opacity: 1;
+}
+
+.opt-text { font-size: 13px; color: var(--text-soft); line-height: 1.4; }
+.opt-label.selected .opt-text { color: var(--text); font-weight: 500; }
+
+/* ─── Scale ─── */
+.scale-row {
+  display: flex;
+  gap: 6px;
+}
+.scale-btn {
+  flex: 1;
+  height: 44px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.scale-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+.scale-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+.scale-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ─── Other input after opts ─── */
+.opt-other-wrap {
+  margin-top: 7px;
+}
+.opt-other-wrap input {
+  font-size: 13px;
+  padding: 10px 14px;
+}
+
+/* ─── Submit ─── */
+.submit-section {
+  padding-top: 40px;
+  border-top: 1px solid var(--border);
+}
+.submit-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.btn-submit {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  padding: 14px 28px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity var(--transition), transform var(--transition);
+  letter-spacing: .01em;
+}
+.btn-submit:hover { opacity: .88; }
+.btn-submit:active { transform: scale(.97); }
+.btn-submit:disabled { opacity: .5; cursor: not-allowed; }
+.submit-note { font-size: 12px; color: var(--text-muted); line-height: 1.7; }
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin .6s linear infinite;
+  display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── Thank you ─── */
+#thankyou {
+  display: none;
+  text-align: center;
+  padding: 100px 0;
+}
+.ty-icon {
+  font-size: 40px;
+  margin-bottom: 24px;
+  display: block;
+}
+.ty-title {
+  font-family: var(--font-serif);
+  font-size: 32px;
+  font-weight: 400;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+.ty-sub {
+  font-size: 14px;
+  color: var(--text-soft);
+  line-height: 1.75;
+  max-width: 400px;
+  margin: 0 auto 8px;
+}
+.ty-sig { font-size: 12px; color: var(--text-muted); margin-top: 16px; }
+
+@media (max-width: 480px) {
+  .opts.grid2 { grid-template-columns: 1fr; }
+  .header h1 { font-size: 28px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="header">
+    <div class="header-tag">Onira Labs — Exec OS</div>
+    <div class="client-badge">
+      <div class="client-avatar">RO</div>
+      <div class="client-info">
+        <span class="client-name">Rodrigo Oliveira</span>
+        <span class="client-co">Compobus</span>
+      </div>
+    </div>
+    <h1>Preciso entender como<br>você <em>decide.</em></h1>
+    <p class="header-sub">Rodrigo, essas perguntas me ajudam a entender como você pensa o comercial da Compobus — não o que você faz, mas como você decide. Onde tiver opção, marca a que mais se aproxima; onde tiver campo aberto, duas frases bastam.</p>
+    <div class="header-meta">
+      <span class="meta-item"><span class="meta-dot"></span> ~10 minutos</span>
+      <span class="meta-item"><span class="meta-dot"></span> 8 perguntas</span>
+      <span class="meta-item"><span class="meta-dot"></span> Respostas só para o Jeff</span>
+    </div>
+  </header>
+
+  <div class="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+    <span id="progress-label">0%</span>
+  </div>
+
+  <div id="form-body">
+
+    <!-- 1. O filtro de oportunidade -->
+    <div class="section">
+      <div class="section-label"><span>O filtro de oportunidade</span></div>
+
+      <div class="question" data-qid="filtro">
+        <div class="q-text">Quando chega uma cotação nova, o que mais pesa na sua decisão de ir adiante ou largar?</div>
+        <div class="q-hint">Pode marcar mais de uma</div>
+        <div class="opts">
+          <label class="opt-label cb" onclick="toggleOpt(this)">
+            <span class="opt-indicator"></span><span class="opt-text">Perfil do cliente — porte, histórico, seriedade</span>
+          </label>
+          <label class="opt-label cb" onclick="toggleOpt(this)">
+            <span class="opt-indicator"></span><span class="opt-text">Margem provável</span>
+          </label>
+          <label class="opt-label cb" onclick="toggleOpt(this)">
+            <span class="opt-indicator"></span><span class="opt-text">Momento — se encaixa na capacidade atual</span>
+          </label>
+          <label class="opt-label cb" onclick="toggleOpt(this)">
+            <span class="opt-indicator"></span><span class="opt-text">Instinto — sinto se vai dar em algo ou não</span>
+          </label>
+          <label class="opt-label cb" onclick="toggleOpt(this)">
+            <span class="opt-indicator"></span><span class="opt-text">Potencial de relação de longo prazo</span>
+          </label>
+        </div>
+        <div class="opt-other-wrap">
+          <input type="text" data-answer-id="filtro_outro" placeholder="Outro critério que pesa?" oninput="updateProgress()">
+        </div>
+      </div>
+
+      <div class="question">
+        <div class="q-text">Quanto da sua semana envolve esse tipo de triagem?</div>
+        <div class="scale-row" id="scale-triagem">
+          <button class="scale-btn" onclick="setScale('scale-triagem',1)">1</button>
+          <button class="scale-btn" onclick="setScale('scale-triagem',2)">2</button>
+          <button class="scale-btn" onclick="setScale('scale-triagem',3)">3</button>
+          <button class="scale-btn" onclick="setScale('scale-triagem',4)">4</button>
+          <button class="scale-btn" onclick="setScale('scale-triagem',5)">5</button>
+        </div>
+        <div class="scale-labels">
+          <span>Quase nunca</span>
+          <span>Praticamente todo dia</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. A lógica do preço -->
+    <div class="section">
+      <div class="section-label"><span>A lógica do preço</span></div>
+
+      <div class="question" data-qid="preco_vars">
+        <div class="q-text">Precificar na Compobus envolve muita variável. Quando você monta um preço fora de tabela, quais dessas mais mudam a conta?</div>
+        <div class="q-hint">Pode marcar mais de uma</div>
+        <div class="opts">
+          <label class="opt-label cb" onclick="toggleOpt(this)">
+            <span class="opt-indicator"></span><span class="opt-text">Tipo de veículo / plataforma</span>
+          </label>
+          <label class="opt-label cb" onclick="toggleOpt(this)">
+            <span class="opt-indicator"></span><span class="opt-text">Com ou sem instalação</span>
+          </label>
+          <label class="opt-label cb" onclick="toggleOpt(this)">
+            <span class="opt-indicator"></span><span class="opt-text">Ônibus novo ou usado</span>
+          </label>
+          <label class="opt-label cb" onclick="toggleOpt(this)">
+            <span class="opt-indicator"></span><span class="opt-text">Tamanho de chicote / número de assentos</span>
+          </label>
+          <label class="opt-label cb" onclick="toggleOpt(this)">
+            <span class="opt-indicator"></span><span class="opt-text">Volume / recorrência do cliente</span>
+          </label>
+          <label class="opt-label cb" onclick="toggleOpt(this)">
+            <span class="opt-indicator"></span><span class="opt-text">Urgência do prazo</span>
+          </label>
+          <label class="opt-label cb" onclick="toggleOpt(this)">
+            <span class="opt-indicator"></span><span class="opt-text">Relação com o cliente — novo vs. antigo</span>
+          </label>
+          <label class="opt-label cb" onclick="toggleOpt(this)">
+            <span class="opt-indicator"></span><span class="opt-text">Movimento da concorrência</span>
+          </label>
+        </div>
+        <div class="opt-other-wrap">
+          <input type="text" data-answer-id="preco_outro" placeholder="Outra variável?" oninput="updateProgress()">
+        </div>
+      </div>
+
+      <div class="question">
+        <div class="q-text">Sua equipe consegue montar esse preço sozinha, ou depende de você?</div>
+        <div class="opts">
+          <label class="opt-label" data-group="preco_autonomia" onclick="selectOpt(this,'preco_autonomia')">
+            <span class="opt-indicator"></span><span class="opt-text">Monta sozinha na maioria dos casos</span>
+          </label>
+          <label class="opt-label" data-group="preco_autonomia" onclick="selectOpt(this,'preco_autonomia')">
+            <span class="opt-indicator"></span><span class="opt-text">Monta, mas eu reviso antes de sair</span>
+          </label>
+          <label class="opt-label" data-group="preco_autonomia" onclick="selectOpt(this,'preco_autonomia')">
+            <span class="opt-indicator"></span><span class="opt-text">Depende de mim pra quase tudo fora de tabela</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. O time na linha de frente -->
+    <div class="section">
+      <div class="section-label"><span>O time na linha de frente</span></div>
+
+      <div class="question" data-qid="time_risco">
+        <div class="q-text">Quando a equipe atende um cliente sem você por perto, o que mais te preocupa?</div>
+        <div class="q-hint">Pode marcar mais de uma</div>
+        <div class="opts">
+          <label class="opt-label cb" onclick="toggleOpt(this)">
+            <span class="opt-indicator"></span><span class="opt-text">Desqualificam mal — gastam tempo no que não vai dar em nada</span>
+          </label>
+          <label class="opt-label cb" onclick="toggleOpt(this)">
+            <span class="opt-indicator"></span><span class="opt-text">Dão desconto fácil demais</span>
+          </label>
+          <label class="opt-label cb" onclick="toggleOpt(this)">
+            <span class="opt-indicator"></span><span class="opt-text">Não leem o momento do cliente — insistem ou largam na hora errada</span>
+          </label>
+          <label class="opt-label cb" onclick="toggleOpt(this)">
+            <span class="opt-indicator"></span><span class="opt-text">Falam do mesmo jeito com todo tipo de comprador</span>
+          </label>
+          <label class="opt-label cb" onclick="toggleOpt(this)">
+            <span class="opt-indicator"></span><span class="opt-text">Perdem informação que seria útil pro desenvolvimento de produto</span>
+          </label>
+        </div>
+        <div class="opt-other-wrap">
+          <input type="text" data-answer-id="time_outro" placeholder="Outra preocupação?" oninput="updateProgress()">
+        </div>
+      </div>
+
+      <div class="question">
+        <div class="q-text">Com que frequência você precisa corrigir ou refazer algo que o time conduziu?</div>
+        <div class="scale-row" id="scale-correcao">
+          <button class="scale-btn" onclick="setScale('scale-correcao',1)">1</button>
+          <button class="scale-btn" onclick="setScale('scale-correcao',2)">2</button>
+          <button class="scale-btn" onclick="setScale('scale-correcao',3)">3</button>
+          <button class="scale-btn" onclick="setScale('scale-correcao',4)">4</button>
+          <button class="scale-btn" onclick="setScale('scale-correcao',5)">5</button>
+        </div>
+        <div class="scale-labels">
+          <span>Raramente</span>
+          <span>Toda semana</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Leitura de interlocutor -->
+    <div class="section">
+      <div class="section-label"><span>Leitura de interlocutor</span></div>
+
+      <div class="question">
+        <div class="q-text">Pensa na última vez que falou com um comprador técnico de encarroçadora e, no mesmo período, com um dono de frota. O que muda na forma como você conduz cada conversa?</div>
+        <div class="q-hint">Duas frases bastam — o que muda no jeito de falar, no que você destaca, no ritmo</div>
+        <textarea data-answer-id="interlocutor" placeholder="Ex: Com o técnico eu falo de especificação e compatibilidade; com o frotista foco em custo total e prazo de entrega…" oninput="updateProgress()"></textarea>
+      </div>
+    </div>
+
+    <!-- 5. Do mercado pra fábrica -->
+    <div class="section">
+      <div class="section-label"><span>Do mercado pra fábrica</span></div>
+
+      <div class="question">
+        <div class="q-text">Você está no campo ouvindo o mercado o tempo todo. A última coisa relevante que você captou e que deveria virar insumo de produto — o que era?</div>
+        <div class="q-hint">Pode ser curto — uma frase sobre o que você ouviu</div>
+        <textarea data-answer-id="mercado_sinal" placeholder="Ex: Um frotista pediu um chicote que a gente ainda não fabrica, pra um modelo novo de chassis…" oninput="updateProgress()"></textarea>
+      </div>
+
+      <div class="question">
+        <div class="q-text">E essa informação — chegou na fábrica de algum jeito?</div>
+        <div class="opts">
+          <label class="opt-label" data-group="info_destino" onclick="selectOpt(this,'info_destino')">
+            <span class="opt-indicator"></span><span class="opt-text">Cheguei a repassar formalmente</span>
+          </label>
+          <label class="opt-label" data-group="info_destino" onclick="selectOpt(this,'info_destino')">
+            <span class="opt-indicator"></span><span class="opt-text">Comentei por cima, mas não virou nada estruturado</span>
+          </label>
+          <label class="opt-label" data-group="info_destino" onclick="selectOpt(this,'info_destino')">
+            <span class="opt-indicator"></span><span class="opt-text">Ficou na minha cabeça</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. Onde mora a informação -->
+    <div class="section">
+      <div class="section-label"><span>Onde mora a informação</span></div>
+
+      <div class="question" data-qid="fontes">
+        <div class="q-text">Quando você precisa lembrar de um detalhe de uma negociação antiga — preço que fechou, condição que combinou — onde você vai procurar?</div>
+        <div class="q-hint">Pode marcar mais de uma</div>
+        <div class="opts">
+          <label class="opt-label cb" onclick="toggleOpt(this)">
+            <span class="opt-indicator"></span><span class="opt-text">Cabeça / memória</span>
+          </label>
+          <label class="opt-label cb" onclick="toggleOpt(this)">
+            <span class="opt-indicator"></span><span class="opt-text">WhatsApp — rola a conversa até achar</span>
+          </label>
+          <label class="opt-label cb" onclick="toggleOpt(this)">
+            <span class="opt-indicator"></span><span class="opt-text">Planilha</span>
+          </label>
+          <label class="opt-label cb" onclick="toggleOpt(this)">
+            <span class="opt-indicator"></span><span class="opt-text">E-mail</span>
+          </label>
+          <label class="opt-label cb" onclick="toggleOpt(this)">
+            <span class="opt-indicator"></span><span class="opt-text">Sistema / ERP</span>
+          </label>
+        </div>
+        <div class="opt-other-wrap">
+          <input type="text" data-answer-id="fontes_outro" placeholder="Outro lugar?" oninput="updateProgress()">
+        </div>
+      </div>
+    </div>
+
+    <!-- 7. Fechamento -->
+    <div class="section">
+      <div class="section-label"><span>Fechamento</span></div>
+
+      <div class="question">
+        <div class="q-text">Se você sumisse uma semana sem avisar, qual parte do comercial da Compobus sentiria mais falta de você?</div>
+        <div class="opts">
+          <label class="opt-label" data-group="falta" onclick="selectOpt(this,'falta')">
+            <span class="opt-indicator"></span><span class="opt-text">Qualificar o que vale a pena</span>
+          </label>
+          <label class="opt-label" data-group="falta" onclick="selectOpt(this,'falta')">
+            <span class="opt-indicator"></span><span class="opt-text">Fechar o preço certo</span>
+          </label>
+          <label class="opt-label" data-group="falta" onclick="selectOpt(this,'falta')">
+            <span class="opt-indicator"></span><span class="opt-text">Conduzir os clientes mais importantes</span>
+          </label>
+          <label class="opt-label" data-group="falta" onclick="selectOpt(this,'falta')">
+            <span class="opt-indicator"></span><span class="opt-text">A leitura do mercado que alimenta novos produtos</span>
+          </label>
+          <label class="opt-label" data-group="falta" onclick="selectOpt(this,'falta')">
+            <span class="opt-indicator"></span><span class="opt-text">Tudo acima</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="submit-section">
+      <div class="submit-row">
+        <button class="btn-submit" id="btn-submit" onclick="handleSubmit()">
+          Enviar respostas →
+        </button>
+      </div>
+      <p class="submit-note">Suas respostas vão direto para o Jeff. Nenhuma resposta certa ou errada — o que importa é como você pensa.</p>
+    </div>
+
+  </div>
+
+  <div id="thankyou">
+    <span class="ty-icon">✦</span>
+    <h2 class="ty-title">Obrigado, Rodrigo.</h2>
+    <p class="ty-sub">Vou analisar tudo com calma antes do nosso encontro. Essas respostas me ajudam a entender como você opera — e é a partir disso que a gente constrói.</p>
+    <p class="ty-sig">— Jeff, Onira Labs</p>
+  </div>
+
+</div>
+
+
+<script>
+window.FORM_TOTAL = 11;
+
+async function handleSubmit() {
+  const btn = document.getElementById('btn-submit');
+  btn.innerHTML = '<span class="spinner"></span> Enviando…';
+  btn.disabled = true;
+
+  function radio(group) {
+    const el = document.querySelector(`.opt-label.selected[data-group="${group}"] .opt-text`);
+    return el ? el.textContent.trim() : '—';
+  }
+
+  function checks(qid) {
+    const els = document.querySelectorAll(`[data-qid="${qid}"] .opt-label.cb.selected .opt-text`);
+    return els.length ? Array.from(els).map(e => e.textContent.trim()).join(', ') : '—';
+  }
+
+  function txt(id) {
+    const el = document.querySelector(`[data-answer-id="${id}"]`);
+    return el && el.value.trim() ? el.value.trim() : '—';
+  }
+
+  function scale(id) {
+    const el = document.getElementById(id);
+    return el && el.dataset.val ? el.dataset.val : '—';
+  }
+
+  const payload = {
+    _subject: 'Diagnóstico Exec OS — Rodrigo Oliveira (Compobus)',
+    cliente: 'Rodrigo Oliveira — Compobus',
+    data_envio: new Date().toLocaleString('pt-BR'),
+
+    filtro_de_oportunidade: checks('filtro'),
+    filtro_outro: txt('filtro_outro'),
+    frequencia_triagem_1a5: scale('scale-triagem'),
+
+    variaveis_preco: checks('preco_vars'),
+    preco_outro: txt('preco_outro'),
+    autonomia_preco_equipe: radio('preco_autonomia'),
+
+    preocupacao_time_sozinho: checks('time_risco'),
+    time_outro: txt('time_outro'),
+    frequencia_correcao_1a5: scale('scale-correcao'),
+
+    leitura_de_interlocutor: txt('interlocutor'),
+
+    sinal_do_mercado: txt('mercado_sinal'),
+    info_chegou_na_fabrica: radio('info_destino'),
+
+    onde_busca_info_antiga: checks('fontes'),
+    fontes_outro: txt('fontes_outro'),
+
+    maior_falta_se_sumisse: radio('falta'),
+  };
+
+  try {
+    const res = await fetch('https://formspree.io/f/xgoqkkkn', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const json = await res.json();
+
+    if (res.ok) {
+      document.getElementById('form-body').style.display = 'none';
+      document.getElementById('thankyou').style.display = 'block';
+      document.getElementById('progress').style.width = '100%';
+      document.getElementById('progress-label').textContent = '100%';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      throw new Error(json.error || 'Erro ao enviar');
+    }
+  } catch(e) {
+    console.error(e);
+    btn.innerHTML = 'Enviar respostas →';
+    btn.disabled = false;
+    alert('Erro ao enviar. Tente novamente em instantes.');
+  }
+}
+
+function selectOpt(el, group) {
+  document.querySelectorAll(`.opt-label[data-group="${group}"]`).forEach(l => l.classList.remove('selected'));
+  el.classList.add('selected');
+  updateProgress();
+}
+
+function toggleOpt(el) {
+  el.classList.toggle('selected');
+  updateProgress();
+}
+
+function setScale(groupId, val) {
+  const row = document.getElementById(groupId);
+  row.querySelectorAll('.scale-btn').forEach((b, i) => b.classList.toggle('active', i + 1 <= val));
+  row.dataset.val = val;
+  updateProgress();
+}
+
+function updateProgress() {
+  let n = 0;
+
+  const radioGroups = new Set();
+  document.querySelectorAll('.opt-label.selected[data-group]').forEach(el => radioGroups.add(el.dataset.group));
+  n += radioGroups.size;
+
+  const cbGroups = new Set();
+  document.querySelectorAll('.opt-label.cb.selected').forEach(el => {
+    const q = el.closest('.question');
+    if (q && q.dataset.qid) cbGroups.add(q.dataset.qid);
+  });
+  n += cbGroups.size;
+
+  document.querySelectorAll('.scale-row[data-val]').forEach(() => n++);
+
+  document.querySelectorAll('textarea[data-answer-id]').forEach(i => {
+    if (i.value.trim().length > 3) n++;
+  });
+
+  const pct = Math.min(100, Math.round((n / window.FORM_TOTAL) * 100));
+  const fill = document.getElementById('progress');
+  if (fill) fill.style.width = pct + '%';
+  const lbl = document.getElementById('progress-label');
+  if (lbl) lbl.textContent = pct + '%';
+}
+</script>
+</body>
+</html>
