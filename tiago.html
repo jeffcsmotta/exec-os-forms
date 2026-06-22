@@ -1,0 +1,434 @@
+<!-- Sobre — Ítalo Brasiliano Pizzeria | tela de insumos para Osmar e Tiago -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sobre — Tiago · Ítalo Brasiliano</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Hanken+Grotesk:wght@400;500;600&display=swap');
+
+  :root{
+    --bg:#160F0B;            /* sala no escuro */
+    --panel:#211710;          /* parede de madeira */
+    --panel-2:#2B1E15;
+    --ember:#E2592B;          /* brasa */
+    --ember-soft:#F0875A;
+    --clay:#B5603F;           /* terracota */
+    --cream:#F1E6D2;          /* papel quente */
+    --cream-dim:#C8B79A;
+    --gold:#CDA864;
+    --line:rgba(241,230,210,.14);
+    --serif:'Instrument Serif', Georgia, serif;
+    --sans:'Hanken Grotesk', system-ui, sans-serif;
+  }
+
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; height:100%;}
+  body{
+    background:var(--bg);
+    color:var(--cream);
+    font-family:var(--sans);
+    overflow:hidden;
+  }
+
+  /* brilho do forno — assinatura. cresce conforme o fogo "pega" */
+  #glow{
+    position:fixed; left:50%; bottom:-22vh; transform:translateX(-50%);
+    width:140vw; height:70vh; pointer-events:none; z-index:0;
+    background:radial-gradient(ellipse at center, rgba(226,89,43,.55), rgba(226,89,43,.12) 42%, transparent 68%);
+    opacity:.18; transition:opacity 1.1s ease, filter 1.1s ease;
+    filter:blur(8px);
+  }
+
+  #app{position:relative; z-index:1; height:100%; display:flex; flex-direction:column; max-width:540px; margin:0 auto;}
+
+  /* topo: voltar + seção + progresso */
+  header{padding:18px 22px 0; display:flex; flex-direction:column; gap:12px;}
+  .toprow{display:flex; align-items:center; justify-content:space-between; min-height:24px;}
+  #back{background:none; border:none; color:var(--cream-dim); font-family:var(--sans); font-size:14px; cursor:pointer; padding:6px 0; display:none;}
+  #back:hover{color:var(--cream);}
+  .eyebrow{font-size:11px; letter-spacing:.22em; text-transform:uppercase; color:var(--gold); font-weight:600;}
+  #bar{height:2px; background:var(--line); border-radius:2px; overflow:hidden;}
+  #fill{height:100%; width:0; background:linear-gradient(90deg,var(--clay),var(--ember),var(--ember-soft)); transition:width .5s cubic-bezier(.2,.7,.2,1);}
+
+  main{flex:1; display:flex; flex-direction:column; justify-content:center; padding:8px 22px 22px; overflow-y:auto;}
+  .card{animation:rise .55s cubic-bezier(.2,.8,.2,1) both;}
+  @keyframes rise{from{opacity:0; transform:translateY(14px);} to{opacity:1; transform:none;}}
+
+  .qmeta{font-size:12px; color:var(--cream-dim); margin-bottom:14px;}
+  .prompt{font-family:var(--serif); font-weight:400; line-height:1.08; letter-spacing:.2px;
+    font-size:clamp(30px,8.4vw,42px); color:var(--cream); margin:0 0 6px;}
+  .prompt em{font-style:italic; color:var(--ember-soft);}
+  .hint{color:var(--cream-dim); font-size:14px; margin:10px 0 22px; line-height:1.45;}
+
+  /* opções em toque */
+  .opts{display:flex; flex-direction:column; gap:10px; margin-top:20px;}
+  .opt{
+    text-align:left; width:100%; cursor:pointer;
+    background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    color:var(--cream); font-family:var(--sans); font-size:17px; font-weight:500;
+    padding:17px 18px; transition:.18s ease;
+  }
+  .opt:hover{border-color:var(--clay); background:var(--panel-2);}
+  .opt:active{transform:scale(.985);}
+  .opt.sel{border-color:var(--ember); background:var(--panel-2); box-shadow:0 0 0 1px var(--ember) inset;}
+
+  /* binário: dois lados */
+  .binary{display:flex; flex-direction:column; gap:12px; margin-top:22px;}
+  .side{
+    cursor:pointer; background:var(--panel); border:1px solid var(--line); border-radius:16px;
+    padding:22px 20px; transition:.18s ease; color:var(--cream);
+    font-family:var(--serif); font-size:24px; line-height:1.1; text-align:center;
+  }
+  .side:hover{border-color:var(--clay); background:var(--panel-2);}
+  .side.sel{border-color:var(--ember); background:var(--panel-2); box-shadow:0 0 0 1px var(--ember) inset;}
+  .ou{text-align:center; font-size:12px; letter-spacing:.3em; color:var(--cream-dim); text-transform:uppercase;}
+
+  /* texto */
+  textarea, input[type=text]{
+    width:100%; background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    color:var(--cream); font-family:var(--sans); font-size:18px; padding:16px 18px; resize:none;
+    margin-top:4px; line-height:1.4;
+  }
+  textarea:focus, input:focus{outline:none; border-color:var(--ember);}
+  textarea::placeholder, input::placeholder{color:#7c6a55;}
+
+  .blanks{display:flex; flex-direction:column; gap:14px; margin-top:22px;}
+  .blank-lead{font-family:var(--serif); font-size:22px; color:var(--cream-dim);}
+
+  /* rodapé de ações */
+  .actions{display:flex; align-items:center; gap:14px; margin-top:26px;}
+  .next{
+    background:var(--ember); color:#1a0f07; border:none; border-radius:999px;
+    font-family:var(--sans); font-weight:600; font-size:16px; padding:15px 30px; cursor:pointer;
+    transition:.18s ease;
+  }
+  .next:hover{background:var(--ember-soft);}
+  .next:active{transform:scale(.97);}
+  .skip{background:none; border:none; color:var(--cream-dim); font-family:var(--sans); font-size:15px; cursor:pointer; padding:10px;}
+  .skip:hover{color:var(--cream);}
+
+  /* abertura */
+  .open{text-align:left;}
+  .open .big{font-family:var(--serif); font-size:clamp(40px,12vw,58px); line-height:.98; margin:0 0 4px;}
+  .open .big em{font-style:italic; color:var(--ember-soft);}
+  .who{display:flex; flex-direction:column; gap:12px; margin-top:30px;}
+
+  /* áudios */
+  .audio-item{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px 18px; margin-bottom:12px; display:flex; gap:14px; align-items:flex-start; cursor:pointer; transition:.18s;}
+  .audio-item:hover{border-color:var(--clay);}
+  .audio-item.on{border-color:var(--ember); background:var(--panel-2);}
+  .check{flex:0 0 22px; height:22px; border-radius:50%; border:1.5px solid var(--cream-dim); margin-top:2px; display:flex; align-items:center; justify-content:center; font-size:13px; color:#1a0f07;}
+  .audio-item.on .check{background:var(--ember); border-color:var(--ember);}
+  .audio-txt{font-size:16px; line-height:1.4;}
+  .audio-num{font-family:var(--serif); color:var(--gold); font-size:15px;}
+
+  /* fim */
+  .done .big{font-family:var(--serif); font-size:clamp(36px,10vw,52px); line-height:1; margin:0 0 14px;}
+  .summary{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px; max-height:34vh; overflow-y:auto; white-space:pre-wrap; font-size:13px; line-height:1.5; color:var(--cream-dim); margin:18px 0;}
+  .copy-row{display:flex; flex-direction:column; gap:10px;}
+
+  @media (prefers-reduced-motion: reduce){
+    .card{animation:none;} #fill, #glow{transition:none;}
+  }
+</style>
+
+<div id="glow"></div>
+<div id="app">
+  <header>
+    <div class="toprow">
+      <button id="back">← voltar</button>
+      <span class="eyebrow" id="sectionLabel"></span>
+    </div>
+    <div id="bar"><div id="fill"></div></div>
+  </header>
+  <main id="main"></main>
+</div>
+
+<script>
+(function(){
+  // ---- conteúdo ----
+  // who: 'both' | 'osmar' | 'tiago'  | {outro} é substituído pelo nome do parceiro
+  const Q = [
+    {type:'intro'},
+
+    {sec:'Antes daqui', type:'text', key:'antes',
+     prompt:'Antes da pizzaria, eu vivia de…', ph:'pode ser uma palavra', optional:true},
+    {sec:'Antes daqui', type:'choice', key:'aprendi',
+     prompt:'Aprendi a cozinhar…',
+     opts:['Com a nonna','Com a mãe','Com o pai','Sozinho, na marra','Na cozinha dos outros'], other:true},
+    {sec:'Antes daqui', type:'text', key:'primeira_coisa',
+     prompt:'A primeira coisa que me saiu bem foi…', ph:'um prato, um molho, qualquer coisa', optional:true},
+
+    {sec:'Um do outro', type:'text', key:'quem_eh_outro',
+     prompt:'Em uma frase: quem é o {outro} dentro dessa cozinha?', ph:'do seu jeito'},
+    {sec:'Um do outro', type:'text', key:'outro_melhor',
+     prompt:'Uma coisa que o {outro} faz melhor que eu:', ph:'sem inveja', optional:true},
+    {sec:'Um do outro', type:'text', key:'mania_outro',
+     prompt:'Uma mania do {outro} que eu já aceitei que não muda:', ph:'ri à vontade', optional:true},
+
+    {sec:'Essa ou aquela', type:'binary', key:'b_forno', a:'Forno é instinto', b:'Forno é precisão'},
+    {sec:'Essa ou aquela', type:'binary', key:'b_manda', a:'Quem manda é a massa', b:'Quem manda é o recheio'},
+    {sec:'Essa ou aquela', type:'binary', key:'b_caxias', a:'Caxias é casa', b:'Caxias é ponto de partida'},
+    {sec:'Essa ou aquela', type:'binary', key:'b_receita', a:'Receita do nonno', b:'Receita que a gente inventou'},
+    {sec:'Essa ou aquela', type:'binary', key:'b_dia', a:'Sábado lotado', b:'Terça pra cozinhar com calma'},
+    {sec:'Essa ou aquela', type:'binary', key:'b_pizza', a:'Pizza é comida', b:'Pizza é desculpa pra juntar gente'},
+
+    {sec:'A casa', type:'text', key:'cheiro',
+     prompt:'O cheiro que toma conta quando o forno tá no ponto:', ph:'fecha o olho e descreve'},
+    {sec:'A casa', type:'text', key:'som',
+     prompt:'O som de um sábado cheio aqui dentro:', ph:'', optional:true},
+    {sec:'A casa', type:'text', key:'canto',
+     prompt:'O canto dessa casa que é <em>meu</em>:', ph:'onde você se sente em casa', optional:true},
+    {sec:'A casa', type:'text', key:'ritual',
+     prompt:'Antes de abrir a porta, eu sempre…', ph:'algum ritual?', optional:true},
+
+    {sec:'Comer bem', type:'blanks', key:'comer_bem',
+     prompt:'Comer bem é…', leadA:'menos sobre', phA:'…', leadB:'e mais sobre', phB:'…'},
+    {sec:'Comer bem', type:'text', key:'prato_impressiona',
+     prompt:'O prato que eu faço quando quero impressionar alguém:', ph:'', optional:true},
+    {sec:'Comer bem', type:'text', key:'come_fechado',
+     prompt:'Quando fecha e ninguém tá olhando, eu como:', ph:'a verdade', optional:true},
+
+    // individuais
+    {sec:'Só pra você', who:'osmar', type:'choice', key:'moto',
+     prompt:'A moto pra mim é…', opts:['Liberdade','Silêncio','Oficina','Cabeça no lugar'], other:true},
+    {sec:'Só pra você', who:'osmar', type:'text', key:'estrada',
+     prompt:'A estrada que eu sempre volto:', ph:'', optional:true},
+    {sec:'Só pra você', who:'osmar', type:'text', key:'moto_cozinha',
+     prompt:'Pilotar e cozinhar se parecem em quê?', ph:'', optional:true},
+
+    {sec:'Só pra você', who:'tiago', type:'text', key:'toca',
+     prompt:'Cozinhando, na minha cabeça toca:', ph:'uma música, um artista'},
+    {sec:'Só pra você', who:'tiago', type:'text', key:'casa_musica',
+     prompt:'Se essa casa fosse uma música, seria:', ph:'', optional:true},
+    {sec:'Só pra você', who:'tiago', type:'binary', key:'b_servico',
+     a:'Serviço cheio é improviso de jazz', b:'Serviço cheio é partitura ensaiada'},
+
+    {type:'review'}
+  ];
+
+  // ⚠️ TROCAR pelo ID do Formspree do Ítalo (crie um form novo em formspree.io e cole o ID aqui).
+  // Pode usar o do Rodrigo (xgoqkkkn) só pra testar, mas o ideal é um form separado pra não misturar projeto.
+  const FORMSPREE_ENDPOINT = 'https://formspree.io/f/SEU_FORM_ID';
+
+  // ---- estado ----
+  // FIXED_PERSON é trocado por arquivo: 'osmar' em osmar.html, 'tiago' em tiago.html
+  const FIXED_PERSON = 'tiago';
+  let person = FIXED_PERSON;   // 'osmar' | 'tiago'
+  let outro = FIXED_PERSON==='osmar' ? 'Tiago' : 'Osmar';
+  let list = [];              // perguntas filtradas pra pessoa
+  let i = 0;                  // índice atual em list
+  const ans = {_nome: FIXED_PERSON==='osmar' ? 'Osmar' : 'Tiago'};  // respostas
+
+  const main = document.getElementById('main');
+  const fill = document.getElementById('fill');
+  const glow = document.getElementById('glow');
+  const back = document.getElementById('back');
+  const secLabel = document.getElementById('sectionLabel');
+
+  back.addEventListener('click', ()=>{ if(i>0){ i--; render(); }});
+
+  function buildList(){
+    list = Q.filter(q=> !q.who || q.who==='both' || q.who===person);
+  }
+
+  function setProgress(){
+    // brilho do forno cresce com o avanço
+    const frac = list.length>1 ? i/(list.length-1) : 0;
+    fill.style.width = Math.round(frac*100)+'%';
+    glow.style.opacity = (0.18 + frac*0.5).toFixed(2);
+    glow.style.filter = 'blur(8px) saturate('+(1+frac*0.4).toFixed(2)+')';
+  }
+
+  function sub(t){ return (t||'').replace('{outro}', outro); }
+
+  function advance(){ if(i < list.length-1){ i++; render(); } }
+
+  function render(){
+    const q = list[i];
+    back.style.display = i>0 ? 'block' : 'none';
+    secLabel.textContent = q.sec || '';
+    setProgress();
+    main.innerHTML = '';
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    if(q.type==='intro'){ renderIntro(card); }
+    else if(q.type==='review'){ renderReview(card); }
+    else { renderQuestion(card, q); }
+
+    main.appendChild(card);
+    const f = card.querySelector('textarea, input');
+    if(f) setTimeout(()=>f.focus(), 350);
+  }
+
+  function renderIntro(card){
+    card.classList.add('open');
+    card.innerHTML = `
+      <div class="qmeta">Sobre · Ítalo Brasiliano</div>
+      <h1 class="big">O forno fala<br><em>italiano.</em></h1>
+      <p class="hint" style="margin-top:14px; max-width:32ch;">Oi, ${ans._nome}. Isso não é formulário — são uns 5 minutos, quase tudo é só tocar. Responde do jeito que você fala, e pula o que não rolar.</p>
+      <div class="who">
+        <button class="side" id="start">Começar</button>
+      </div>`;
+    card.querySelector('#start').addEventListener('click', ()=>{ buildList(); i=1; render(); });
+  }
+
+  function renderQuestion(card, q){
+    let html = `<h2 class="prompt">${sub(q.prompt)}</h2>`;
+    if(q.optional) html += `<div class="hint">pode pular se não vier nada</div>`;
+    card.innerHTML = html;
+
+    if(q.type==='choice'){
+      const wrap = document.createElement('div'); wrap.className='opts';
+      q.opts.forEach(o=>{
+        const b=document.createElement('button'); b.className='opt'; b.textContent=o;
+        b.addEventListener('click', ()=>{ ans[q.key]=o; advance(); });
+        wrap.appendChild(b);
+      });
+      if(q.other){
+        const ob=document.createElement('button'); ob.className='opt'; ob.textContent='Outro…';
+        ob.addEventListener('click', ()=>{
+          wrap.style.display='none';
+          const inp=document.createElement('input'); inp.type='text'; inp.placeholder='conta aqui';
+          card.appendChild(inp); inp.focus();
+          addActions(card, ()=>{ ans[q.key]=inp.value.trim(); advance(); }, false);
+        });
+        wrap.appendChild(ob);
+      }
+      card.appendChild(wrap);
+    }
+
+    else if(q.type==='binary'){
+      const wrap=document.createElement('div'); wrap.className='binary';
+      const a=document.createElement('button'); a.className='side'; a.textContent=q.a;
+      const ou=document.createElement('div'); ou.className='ou'; ou.textContent='ou';
+      const b=document.createElement('button'); b.className='side'; b.textContent=q.b;
+      a.addEventListener('click', ()=>{ ans[q.key]=q.a; advance(); });
+      b.addEventListener('click', ()=>{ ans[q.key]=q.b; advance(); });
+      wrap.append(a, ou, b); card.appendChild(wrap);
+    }
+
+    else if(q.type==='text'){
+      const ta=document.createElement('textarea'); ta.rows=2; ta.placeholder=q.ph||'';
+      if(ans[q.key]) ta.value=ans[q.key];
+      card.appendChild(ta);
+      addActions(card, ()=>{ ans[q.key]=ta.value.trim(); advance(); }, q.optional);
+    }
+
+    else if(q.type==='blanks'){
+      const wrap=document.createElement('div'); wrap.className='blanks';
+      const la=document.createElement('div'); la.className='blank-lead'; la.textContent=q.leadA;
+      const ia=document.createElement('input'); ia.type='text'; ia.placeholder=q.phA;
+      const lb=document.createElement('div'); lb.className='blank-lead'; lb.textContent=q.leadB;
+      const ib=document.createElement('input'); ib.type='text'; ib.placeholder=q.phB;
+      wrap.append(la, ia, lb, ib); card.appendChild(wrap);
+      addActions(card, ()=>{
+        ans[q.key] = 'menos sobre '+ia.value.trim()+', mais sobre '+ib.value.trim();
+        advance();
+      }, true);
+    }
+  }
+
+  function addActions(card, onNext, optional){
+    const row=document.createElement('div'); row.className='actions';
+    const nx=document.createElement('button'); nx.className='next'; nx.textContent='Próxima';
+    nx.addEventListener('click', onNext);
+    row.appendChild(nx);
+    if(optional){
+      const sk=document.createElement('button'); sk.className='skip'; sk.textContent='pular';
+      sk.addEventListener('click', advance);
+      row.appendChild(sk);
+    }
+    card.appendChild(row);
+  }
+
+  // pares [rótulo legível, chave] — usados na revisão e no payload do Formspree
+  function answerRows(){
+    const L = [
+      ['Antes, vivia de','antes'],
+      ['Aprendeu a cozinhar','aprendi'],
+      ['Primeira coisa que saiu bem','primeira_coisa'],
+      ['Quem é o '+outro,'quem_eh_outro'],
+      [outro+' faz melhor que eu','outro_melhor'],
+      ['Mania do '+outro,'mania_outro'],
+      ['Forno','b_forno'], ['Quem manda','b_manda'], ['Caxias','b_caxias'],
+      ['Receita','b_receita'], ['Dia preferido','b_dia'], ['Pizza é','b_pizza'],
+      ['Cheiro do forno no ponto','cheiro'], ['Som de sábado cheio','som'],
+      ['Meu canto da casa','canto'], ['Ritual antes de abrir','ritual'],
+      ['Comer bem','comer_bem'], ['Prato que impressiona','prato_impressiona'],
+      ['Come quando fecha','come_fechado'],
+    ];
+    if(person==='osmar') L.push(['A moto é','moto'],['Estrada que sempre volta','estrada'],['Pilotar x cozinhar','moto_cozinha']);
+    if(person==='tiago') L.push(['Cozinhando, toca','toca'],['A casa como música','casa_musica'],['Serviço cheio é','b_servico']);
+    return L;
+  }
+
+  function buildPayload(){
+    const payload = {
+      _subject: 'Sobre — Ítalo Brasiliano · respostas de '+ans._nome,
+      cliente: 'Ítalo Brasiliano Pizzeria — página Sobre',
+      quem_respondeu: ans._nome,
+      data_envio: new Date().toLocaleString('pt-BR'),
+    };
+    answerRows().forEach(([label,k])=>{ payload[label] = (ans[k]&&ans[k].length)?ans[k]:'—'; });
+    return payload;
+  }
+
+  function renderReview(card){
+    card.classList.add('done');
+    const preview = answerRows().filter(([,k])=>ans[k]&&ans[k].length)
+      .map(([label,k])=>'• '+label+': '+ans[k]).join('\n');
+    card.innerHTML = `
+      <div class="qmeta">Quase lá, ${ans._nome}.</div>
+      <h2 class="big">Confere e <em>envia.</em></h2>
+      <p class="hint">Dá uma olhada rápida. Se faltou algo, volta. Os áudios o Jeff pede no WhatsApp.</p>
+      <div class="summary">${preview ? preview.replace(/</g,'&lt;') : 'Você pulou tudo — pode voltar e responder o que quiser.'}</div>
+      <div class="copy-row">
+        <button class="next" id="sendBtn" style="width:100%; text-align:center;">Enviar respostas</button>
+        <button class="skip" id="again">Recomeçar do início</button>
+      </div>`;
+    card.querySelector('#sendBtn').addEventListener('click', submitForm);
+    card.querySelector('#again').addEventListener('click', resetAll);
+  }
+
+  async function submitForm(){
+    const btn = document.getElementById('sendBtn');
+    btn.textContent = 'Enviando…'; btn.disabled = true;
+    try{
+      const res = await fetch(FORMSPREE_ENDPOINT, {
+        method:'POST',
+        headers:{'Content-Type':'application/json','Accept':'application/json'},
+        body: JSON.stringify(buildPayload())
+      });
+      const json = await res.json().catch(()=>({}));
+      if(res.ok){ showThanks(); }
+      else { throw new Error(json.error || 'falhou'); }
+    }catch(e){
+      console.error(e);
+      btn.textContent = 'Enviar respostas'; btn.disabled = false;
+      alert('Não consegui enviar agora. Tenta de novo em alguns segundos.');
+    }
+  }
+
+  function showThanks(){
+    fill.style.width = '100%';
+    main.innerHTML = `
+      <div class="card done">
+        <div class="qmeta">Recebido.</div>
+        <h2 class="big">É isso. <em>Obrigado, ${ans._nome}.</em></h2>
+        <p class="hint">Tá tudo comigo. Quando o Jeff pedir os 3 áudios no WhatsApp, manda lá — é a voz de vocês que vai pro site.</p>
+        <button class="skip" id="again2" style="margin-top:10px;">Responder de novo</button>
+      </div>`;
+    document.getElementById('again2').addEventListener('click', resetAll);
+  }
+
+  function resetAll(){
+    for(const k in ans) delete ans[k];
+    ans._nome = FIXED_PERSON==='osmar' ? 'Osmar' : 'Tiago';
+    person = FIXED_PERSON; outro = FIXED_PERSON==='osmar' ? 'Tiago' : 'Osmar';
+    i=0; render();
+  }
+
+  render();
+})();
+</script>
